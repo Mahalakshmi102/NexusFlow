@@ -1,16 +1,40 @@
-# React + Vite
+# NexusFlow: Visual IoT Telemetry & Rule Engine
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+NexusFlow is an advanced, full-stack application designed to ingest high-frequency IoT machine data and process it in real-time using a dynamic, user-defined rule engine.
 
-Currently, two official plugins are available:
+## Status
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**Week 1 Implementation: COMPLETELY FINISHED** 🚀
+- [x] **Time-Series Database Setup**: MongoDB collections highly optimized for IoT telemetry ingest and querying.
+- [x] **High-Speed Ingestion Endpoints**: Express REST API endpoints engineered to handle incoming hardware data.
+- [x] **Canvas Scaffolding**: React and Vite frontend fully initialized.
+- [x] **React Flow Integration**: Interactive, drag-and-drop node canvas built for users to construct visual logic pipelines.
+- [x] **Architecture Overhaul**: Codebase cleanly separated into strict `frontend/` and `backend/` monorepo architectures.
 
-## React Compiler
+## Project Structure
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+This project uses a standard dual-directory setup:
+- `/frontend` - Contains the Vite + React application (Visual Canvas and UI).
+- `/backend` - Contains the Node.js + Express + MongoDB backend (Telemetry Ingestion and Rule Engine).
 
-## Expanding the Oxlint configuration
+## How to Run
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Open two separate terminals from the project root:
+
+**Terminal 1 (Backend Engine):**
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+**Terminal 2 (Frontend Client):**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Technologies
+* **Frontend**: React, React Flow, Recharts, Vite
+* **Backend**: Node.js, Express, MongoDB, Socket.io, RxJS
