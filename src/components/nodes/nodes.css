@@ -1,0 +1,32 @@
+.flow-node {
+    padding: 12px 14px;
+    border-radius: 8px;
+    min-width: 160px;
+    color: #ffffff;
+    font-family: inherit;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    transition: transform 0.2s ease;
+}
+
+.flow-node:hover{
+    transform: translateY(-2px);
+}
+
+.node-body{
+    font-size: 12px;
+}
+
+.data-source-node {
+    background: #0284c7;
+    border: 2px solid #0369a1;
+}
+
+.math-node {
+    background: #7c3aed;
+    border: 2px solid #6d28d9;
+}
+
+.action-node {
+    background: #ea580c;
+    border: 2px solid #c2410c;
+}
