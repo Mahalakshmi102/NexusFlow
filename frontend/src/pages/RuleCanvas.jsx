@@ -10,13 +10,20 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import Sidebar from '../components/Sidebar';
+import { SensorNode, ConditionNode, ActionNode } from '../components/CustomNodes';
+
+const nodeTypes = {
+  sensor: SensorNode,
+  condition: ConditionNode,
+  action: ActionNode
+};
 
 let id = 0;
 const getId = () => `node_${id++}`;
 
 const initialNodes = [
-  { id: '1', type: 'input', data: { label: 'Turbine Sensor' }, position: { x: 50, y: 150 } },
-  { id: '2', data: { label: 'Temp > 80°C' }, position: { x: 300, y: 150 } },
+  { id: '1', type: 'sensor', data: { label: 'Turbine Sensor' }, position: { x: 50, y: 150 } },
+  { id: '2', type: 'condition', data: { label: 'Temp > 80°C' }, position: { x: 300, y: 150 } },
 ];
 const initialEdges = [{ id: 'e1-2', source: '1', target: '2', animated: true }];
 
@@ -97,6 +104,7 @@ function CanvasContent() {
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            nodeTypes={nodeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
