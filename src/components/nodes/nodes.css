@@ -2,7 +2,7 @@
 .flow-node {
   padding: 12px 14px;
   border-radius: 8px;
-  min-width: 170px;
+  min-width: 175px;
   color: #ffffff;
   font-family: inherit;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
@@ -34,7 +34,7 @@
   opacity: 0.85;
 }
 
-/* Day 2: Input Field Styling */
+/* Input Field Styling */
 .input-group {
   display: flex;
   align-items: center;
@@ -62,6 +62,30 @@
   font-size: 11px;
   opacity: 0.7;
   white-space: nowrap;
+}
+
+/* Day 3: Select Dropdown Styling */
+.node-select {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  padding: 5px 8px;
+  color: #ffffff;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.node-select:focus {
+  border-color: #fb923c;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.node-select option {
+  background: #1e293b;
+  color: #ffffff;
 }
 
 /* Distinct Themes */
