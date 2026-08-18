@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import ReactFlow, {
+import React, {useState, useCallback,useMemo} from 'react';
+import ReactFlow,{
   addEdge,
   Background,
   Controls,
@@ -9,44 +9,42 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-// 1. Custom Nodes Import karein
 import DataSourceNode from '../components/nodes/DataSourceNode';
 import MathOperationNode from '../components/nodes/MathOperationNode';
 import ActionTriggerNode from '../components/nodes/ActionTriggerNode';
 
-// 2. Initial Sample Flow Setup
 const initialNodes = [
   {
-    id: '1',
+    id: 'node',
     type: 'dataSource',
-    position: { x: 50, y: 100 },
-    data: { label: 'Temperature Sensor', sensorType: 'temperature' },
+    position: { x: 50, y: 150 },
+    data: {label: 'Temperature Sensor', sensorType: 'temperature'},
   },
   {
-    id: '2',
+    id: 'node-2',
     type: 'mathOperation',
-    position: { x: 300, y: 100 },
-    data: { threshold: 80 },
+    position: { x:50, y:150},
+    data:{label: 'Temperature Sensor', sensorType: 'temperature'},
   },
   {
-    id: '3',
-    type: 'actionTrigger',
-    position: { x: 580, y: 100 },
-    data: { actionType: 'alert' },
+    id: 'node-2',
+    type: 'mathOperation',
+    position: {x: 320, y: 150},
+    data: {threshold: 80},
   },
 ];
 
 const initialEdges = [
-  { id: 'e1-2', source: '1', target: '2', animated: true },
-  { id: 'e2-3', source: '2', target: '3', animated: true },
+  {id: 'e1-2', source: 'node-1', target: 'node-2', animated: true},
+  {id: 'e2-3', source: 'node-2', target: 'node-3', animated: true},
 ];
 
 export default function RuleCanvas() {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
 
-  // 3. Register Custom Node Types (useMemo ensures stability)
-  const nodeTypes = useMemo(
+  //Custom node registration
+  const nodeType=useMemo(
     () => ({
       dataSource: DataSourceNode,
       mathOperation: MathOperationNode,
@@ -56,22 +54,52 @@ export default function RuleCanvas() {
   );
 
   const onNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+    (changes) => setNodes((nds) => applyNodeChanges(changes,nds)),
     []
   );
 
-  const onEdgesChange = useCallback(
+  const onEdgesChanges = useCallback (
     (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
     []
   );
 
   const onConnect = useCallback(
-    (connection) => setEdges((eds) => addEdge({ ...connection, animated: true }, eds)),
+    (connection) => setEdges((eds) => addEdge({ ...connection,animated: true}, eds)),
     []
   );
 
+  //Day 5: Dynamic Node Adder Function
+  const addNode = (type, label => {
+    const id = `node_${Data.now()}`;
+    const newNode = {
+      id,
+      type,
+      position: { x:Math.random() * 250 + 50, y: Math.random() * 200 + 50 },
+      data :{
+        label,
+        threshold:50,
+        actionType: 'alert',
+      },
+    };
+    setNodes((nds) => nds.concat(newNode));
+};
+
   return (
-    <div style={{ width: '100%', height: 'calc(100vh - 60px)', background: '#0f172a' }}>
+    <div style={{ width: '100%', height: 'calc(100vh - 60px)', background: '#0f172a', position: 'relative' }}>
+      {/* Node Palette Toolbar */}
+      <div className="canvas-toolbar">
+        <span className="toolbar-title">Add Nodes:</span>
+        <button className="btn-add btn-data" onClick={() => addNode('dataSource', 'New Data Source')}>
+          + Data Source
+        </button>
+        <button className="btn-add btn-math" onClick={() => addNode('mathOperation', 'Math Operator')}>
+          + Math Operation
+        </button>
+        <button className="btn-add btn-action" onClick={() => addNode('actionTrigger', 'Action Trigger')}>
+          + Action Trigger
+        </button>
+      </div>
+
       <ReactFlow
         nodes={nodes}
         edges={edges}

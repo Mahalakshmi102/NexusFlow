@@ -103,3 +103,55 @@
   background: #ea580c;
   border: 2px solid #c2410c;
 }
+
+/* Day 5: Canvas Toolbar / Palette Styles */
+.canvas-toolbar {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.toolbar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.btn-add {
+  border: none;
+  padding: 6px 12px;
+  border-radius: 5px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+.btn-add:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-data {
+  background: #0284c7;
+}
+
+.btn-math {
+  background: #7c3aed;
+}
+
+.btn-action {
+  background: #ea580c;
+}
