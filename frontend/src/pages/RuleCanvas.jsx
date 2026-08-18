@@ -10,13 +10,20 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import Sidebar from '../components/Sidebar';
+import { SensorNode, ConditionNode, ActionNode } from '../components/CustomNodes';
+
+const nodeTypes = {
+  sensor: SensorNode,
+  condition: ConditionNode,
+  action: ActionNode
+};
 
 let id = 0;
 const getId = () => `node_${id++}`;
 
 const initialNodes = [
-  { id: '1', type: 'input', data: { label: 'Turbine Sensor' }, position: { x: 50, y: 150 } },
-  { id: '2', data: { label: 'Temp > 80°C' }, position: { x: 300, y: 150 } },
+  { id: '1', type: 'sensor', data: { label: 'Turbine Sensor' }, position: { x: 50, y: 150 } },
+  { id: '2', type: 'condition', data: { label: 'Temp > 80°C' }, position: { x: 300, y: 150 } },
 ];
 const initialEdges = [{ id: 'e1-2', source: '1', target: '2', animated: true }];
 
@@ -66,8 +73,20 @@ function CanvasContent() {
   const handleSaveRule = () => {
     if (reactFlowInstance) {
       const flowJSON = reactFlowInstance.toObject();
-      console.log('NexusFlow Compiled Graph JSON:', flowJSON);
-      alert('Rule Saved Successfully! (Check Browser Console for JSON Output)');
+      const formattedJSON = JSON.stringify(flowJSON, null, 2);
+      console.log('NexusFlow Compiled Graph JSON:', formattedJSON);
+      
+      // Export perfectly formatted JSON object as a file
+      const blob = new Blob([formattedJSON], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'pipeline-config.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      alert('Rule Saved Successfully! Pipeline JSON downloaded.');
     }
   };
 
@@ -97,6 +116,7 @@ function CanvasContent() {
           <ReactFlow
             nodes={nodes}
             edges={edges}
+            nodeTypes={nodeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}

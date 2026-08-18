@@ -21,7 +21,7 @@ export default function Sidebar() {
 
       {/* Input Node */}
       <div 
-        onDragStart={(event) => onDragStart(event, 'input', 'Sensor Node')} 
+        onDragStart={(event) => onDragStart(event, 'sensor', 'Sensor Node')} 
         draggable
         style={nodeStyle('#1a73e8')}
       >
@@ -30,7 +30,7 @@ export default function Sidebar() {
 
       {/* Logic Node */}
       <div 
-        onDragStart={(event) => onDragStart(event, 'default', 'Filter / Condition')} 
+        onDragStart={(event) => onDragStart(event, 'condition', 'Filter / Condition')} 
         draggable
         style={nodeStyle('#f2a900')}
       >
@@ -39,7 +39,7 @@ export default function Sidebar() {
 
       {/* Output Node */}
       <div 
-        onDragStart={(event) => onDragStart(event, 'output', 'Action Trigger')} 
+        onDragStart={(event) => onDragStart(event, 'action', 'Action Trigger')} 
         draggable
         style={nodeStyle('#d93025')}
       >
