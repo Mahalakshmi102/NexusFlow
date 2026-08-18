@@ -39,6 +39,11 @@ function CanvasContent() {
   const onEdgesChange = useCallback((changes) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
   const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), []);
 
+  const isValidConnection = useCallback((connection) => {
+    // Prevent self-connection and inherently React Flow prevents output-to-output based on Handle types
+    return connection.source !== connection.target;
+  }, []);
+
   const onDragOver = useCallback((event) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
@@ -77,7 +82,11 @@ function CanvasContent() {
       const flowJSON = reactFlowInstance.toObject();
       const formattedJSON = JSON.stringify(flowJSON, null, 2);
       console.log('NexusFlow Compiled Graph JSON:', formattedJSON);
+<<<<<<< HEAD
       
+=======
+
+>>>>>>> 883507c (feat: restored and completed pipeline builder features)
       try {
         const response = await fetch('http://localhost:5000/api/graphs/compile', {
           method: 'POST',
@@ -94,7 +103,6 @@ function CanvasContent() {
         console.error('Error saving pipeline:', err);
         alert('Error saving pipeline. See console for details.');
       }
-
       // Export perfectly formatted JSON object as a file
       const blob = new Blob([formattedJSON], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -137,9 +145,12 @@ function CanvasContent() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            isValidConnection={isValidConnection}
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            defaultEdgeOptions={{ style: { stroke: '#38bdf8', strokeWidth: 2 } }}
+            fitView
           >
             <Controls />
             <MiniMap />

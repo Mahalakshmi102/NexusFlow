@@ -21,21 +21,19 @@ export default function MathOperationNode({ id, data }) {
         <div className="flow-node math-node">
             {/* Input Handle */}
             <Handle type="target" position={Position.Left} id="input" />
-
             <div className="node-header"> ➗ Math Operation</div>
-
             <div className="node-body">
-                <label className="node-label">Condition: &gt; Threshold</label>
-                <div className="input-group">
+                <label className="node-label" style={{ display: 'block', marginBottom: '4px' }}>Condition: &gt; Threshold</label>
+                <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <input 
                         type="number"
                         className="node-input nodrag"
+                        placeholder="e.g. 80"
                         value={data?.threshold || ''}
                         onChange={onChange}
-                        placeholder="e.g. 80"
-                        style={{ marginTop: '8px', width: '100%', padding: '4px', boxSizing: 'border-box', color: 'black' }}
+                        style={{ width: '100%', padding: '4px', boxSizing: 'border-box', color: 'black' }}
                     />
-                    <span className="input-unit">C / val</span>
+                    <span className="input-unit" style={{ fontSize: '10px' }}>C / val</span>
                 </div>
             </div>
 
