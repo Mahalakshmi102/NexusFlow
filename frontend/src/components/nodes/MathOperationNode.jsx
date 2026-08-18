@@ -42,5 +42,6 @@ export default function MathOperationNode({ id, data }) {
             {/* Output Handle*/}
             <Handle type="source" position={Position.Right} id="output" />
         </div>
+    
     );
-}
+} 
