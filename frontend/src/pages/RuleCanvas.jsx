@@ -82,11 +82,7 @@ function CanvasContent() {
       const flowJSON = reactFlowInstance.toObject();
       const formattedJSON = JSON.stringify(flowJSON, null, 2);
       console.log('NexusFlow Compiled Graph JSON:', formattedJSON);
-<<<<<<< HEAD
-      
-=======
 
->>>>>>> 883507c (feat: restored and completed pipeline builder features)
       try {
         const response = await fetch('http://localhost:5000/api/graphs/compile', {
           method: 'POST',
