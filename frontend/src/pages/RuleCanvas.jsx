@@ -10,12 +10,14 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import Sidebar from '../components/Sidebar';
-import { SensorNode, ConditionNode, ActionNode } from '../components/CustomNodes';
+import DataSourceNode from '../components/nodes/DataSourceNode';
+import MathOperationNode from '../components/nodes/MathOperationNode';
+import ActionTriggerNode from '../components/nodes/ActionTriggerNode';
 
 const nodeTypes = {
-  sensor: SensorNode,
-  condition: ConditionNode,
-  action: ActionNode
+  sensor: DataSourceNode,
+  condition: MathOperationNode,
+  action: ActionTriggerNode
 };
 
 let id = 0;
@@ -70,12 +72,29 @@ function CanvasContent() {
   );
 
   // JSON Graph output handler (Keerthi ke backend ko bhejne ke liye)
-  const handleSaveRule = () => {
+  const handleSaveRule = async () => {
     if (reactFlowInstance) {
       const flowJSON = reactFlowInstance.toObject();
       const formattedJSON = JSON.stringify(flowJSON, null, 2);
       console.log('NexusFlow Compiled Graph JSON:', formattedJSON);
       
+      try {
+        const response = await fetch('http://localhost:5000/api/graphs/compile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: formattedJSON
+        });
+
+        if (response.ok) {
+          alert('Pipeline saved successfully to the backend!');
+        } else {
+          alert('Failed to save pipeline to the backend.');
+        }
+      } catch (err) {
+        console.error('Error saving pipeline:', err);
+        alert('Error saving pipeline. See console for details.');
+      }
+
       // Export perfectly formatted JSON object as a file
       const blob = new Blob([formattedJSON], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -85,8 +104,6 @@ function CanvasContent() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      alert('Rule Saved Successfully! Pipeline JSON downloaded.');
     }
   };
 
