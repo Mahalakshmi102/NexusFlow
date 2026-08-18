@@ -1,5 +1,5 @@
-import React, {useState, useCallback,useMemo} from 'react';
-import ReactFlow,{
+import React, { useState, useCallback, useMemo } from 'react';
+import ReactFlow, {
   addEdge,
   Background,
   Controls,
@@ -15,36 +15,36 @@ import ActionTriggerNode from '../components/nodes/ActionTriggerNode';
 
 const initialNodes = [
   {
-    id: 'node',
+    id: 'node-1',
     type: 'dataSource',
     position: { x: 50, y: 150 },
-    data: {label: 'Temperature Sensor', sensorType: 'temperature'},
+    data: { label: 'Temperature Sensor', sensorType: 'temperature' },
   },
   {
     id: 'node-2',
     type: 'mathOperation',
-    position: { x:50, y:150},
-    data:{label: 'Temperature Sensor', sensorType: 'temperature'},
+    position: { x: 320, y: 150 },
+    data: { threshold: 80 },
   },
   {
-    id: 'node-2',
-    type: 'mathOperation',
-    position: {x: 320, y: 150},
-    data: {threshold: 80},
+    id: 'node-3',
+    type: 'actionTrigger',
+    position: { x: 600, y: 150 },
+    data: { actionType: 'alert' },
   },
 ];
 
 const initialEdges = [
-  {id: 'e1-2', source: 'node-1', target: 'node-2', animated: true},
-  {id: 'e2-3', source: 'node-2', target: 'node-3', animated: true},
+  { id: 'e1-2', source: 'node-1', target: 'node-2', animated: true },
+  { id: 'e2-3', source: 'node-2', target: 'node-3', animated: true },
 ];
 
 export default function RuleCanvas() {
   const [nodes, setNodes] = useState(initialNodes);
   const [edges, setEdges] = useState(initialEdges);
 
-  //Custom node registration
-  const nodeType=useMemo(
+  // Custom node registration
+  const nodeTypes = useMemo(
     () => ({
       dataSource: DataSourceNode,
       mathOperation: MathOperationNode,
@@ -54,35 +54,35 @@ export default function RuleCanvas() {
   );
 
   const onNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes,nds)),
+    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
     []
   );
 
-  const onEdgesChanges = useCallback (
+  const onEdgesChange = useCallback(
     (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
     []
   );
 
   const onConnect = useCallback(
-    (connection) => setEdges((eds) => addEdge({ ...connection,animated: true}, eds)),
+    (connection) => setEdges((eds) => addEdge({ ...connection, animated: true }, eds)),
     []
   );
 
-  //Day 5: Dynamic Node Adder Function
-  const addNode = (type, label => {
-    const id = `node_${Data.now()}`;
+  // Day 5: Dynamic Node Adder Function
+  const addNode = (type, label) => {
+    const id = `node_${Date.now()}`;
     const newNode = {
       id,
       type,
-      position: { x:Math.random() * 250 + 50, y: Math.random() * 200 + 50 },
-      data :{
+      position: { x: Math.random() * 250 + 50, y: Math.random() * 200 + 50 },
+      data: {
         label,
-        threshold:50,
+        threshold: 50,
         actionType: 'alert',
       },
     };
     setNodes((nds) => nds.concat(newNode));
-};
+  };
 
   return (
     <div style={{ width: '100%', height: 'calc(100vh - 60px)', background: '#0f172a', position: 'relative' }}>
