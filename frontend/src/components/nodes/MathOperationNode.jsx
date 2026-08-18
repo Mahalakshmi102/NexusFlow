@@ -19,19 +19,27 @@ export default function MathOperationNode({ id, data }) {
 
     return (
         <div className="flow-node math-node">
+            {/* Input Handle */}
             <Handle type="target" position={Position.Left} id="input" />
+
             <div className="node-header"> ➗ Math Operation</div>
+
             <div className="node-body">
-                <span>{data?.label || 'Filter Condition'}</span>
-                <input
-                    type="number"
-                    className="nodrag"
-                    placeholder="Threshold (e.g. 80)"
-                    value={data?.threshold || ''}
-                    onChange={onChange}
-                    style={{ marginTop: '8px', width: '100%', padding: '4px', boxSizing: 'border-box', color: 'black' }}
-                />
+                <label className="node-label">Condition: &gt; Threshold</label>
+                <div className="input-group">
+                    <input 
+                        type="number"
+                        className="node-input nodrag"
+                        value={data?.threshold || ''}
+                        onChange={onChange}
+                        placeholder="e.g. 80"
+                        style={{ marginTop: '8px', width: '100%', padding: '4px', boxSizing: 'border-box', color: 'black' }}
+                    />
+                    <span className="input-unit">C / val</span>
+                </div>
             </div>
+
+            {/* Output Handle*/}
             <Handle type="source" position={Position.Right} id="output" />
         </div>
     );
