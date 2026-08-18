@@ -73,8 +73,20 @@ function CanvasContent() {
   const handleSaveRule = () => {
     if (reactFlowInstance) {
       const flowJSON = reactFlowInstance.toObject();
-      console.log('NexusFlow Compiled Graph JSON:', flowJSON);
-      alert('Rule Saved Successfully! (Check Browser Console for JSON Output)');
+      const formattedJSON = JSON.stringify(flowJSON, null, 2);
+      console.log('NexusFlow Compiled Graph JSON:', formattedJSON);
+      
+      // Export perfectly formatted JSON object as a file
+      const blob = new Blob([formattedJSON], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'pipeline-config.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      alert('Rule Saved Successfully! Pipeline JSON downloaded.');
     }
   };
 
