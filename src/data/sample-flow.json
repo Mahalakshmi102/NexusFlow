@@ -1,0 +1,70 @@
+{
+  "nodes": [
+    {
+      "id": "sensor-1",
+      "type": "sensor",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "data": {
+        "label": "Temperature Sensor",
+        "sensorId": "TEMP-001"
+      }
+    },
+    {
+      "id": "filter-1",
+      "type": "movingAverage",
+      "position": {
+        "x": 350,
+        "y": 100
+      },
+      "data": {
+        "label": "Moving Average",
+        "windowSize": 5
+      }
+    },
+    {
+      "id": "threshold-1",
+      "type": "threshold",
+      "position": {
+        "x": 600,
+        "y": 100
+      },
+      "data": {
+        "label": "Temperature Threshold",
+        "threshold": 80
+      }
+    },
+    {
+      "id": "alert-1",
+      "type": "smsAlert",
+      "position": {
+        "x": 850,
+        "y": 100
+      },
+      "data": {
+        "label": "SMS Alert",
+        "message": "Temperature is too high"
+      }
+    }
+  ],
+
+  "edges": [
+    {
+      "id": "edge-1",
+      "source": "sensor-1",
+      "target": "filter-1"
+    },
+    {
+      "id": "edge-2",
+      "source": "filter-1",
+      "target": "threshold-1"
+    },
+    {
+      "id": "edge-3",
+      "source": "threshold-1",
+      "target": "alert-1"
+    }
+  ]
+}
