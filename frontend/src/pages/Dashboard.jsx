@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import {
   LineChart,
   Line,
@@ -64,6 +64,10 @@ export default function Dashboard() {
     { id: 1, time: '10:00:15', type: 'INFO', msg: 'System initialized & telemetry connected' },
   ]);
 
+  // Week 3 Day 4: Metric Filter & Range States
+  const [selectedMetric, setSelectedMetric] = useState('all');
+  const [timeRange, setTimeRange] = useState('live');
+
   useEffect(() => {
     const interval = setInterval(() => {
       const now = new Date().toLocaleTimeString();
@@ -77,11 +81,10 @@ export default function Dashboard() {
       }));
 
       setChartData((prev) => [
-        ...prev.slice(-9),
+        ...prev.slice(-14),
         { time: now, temperature: newTemp, humidity: newHum },
       ]);
 
-      // Week 3 Day 3: Rule Evaluation & Alert Triggers
       if (newTemp > 85) {
         setAlerts((prev) => [
           {
@@ -108,21 +111,75 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  // Day 4: Summary Analytics Calculations
+  const stats = useMemo(() => {
+    if (!chartData.length) return { maxTemp: 0, minTemp: 0, avgTemp: 0 };
+    const temps = chartData.map((d) => d.temperature);
+    const max = Math.max(...temps);
+    const min = Math.min(...temps);
+    const avg = Math.round(temps.reduce((a, b) => a + b, 0) / temps.length);
+    return { maxTemp: max, minTemp: min, avgTemp: avg };
+  }, [chartData]);
+
   return (
     <div style={{ padding: '24px', background: '#0f172a', minHeight: 'calc(100vh - 60px)', color: '#ffffff' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '700', margin: 0 }}>Visual IoT Live Telemetry</h1>
-        <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
-          Real-time sensor monitoring & rule evaluations
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h1 style={{ fontSize: '22px', fontWeight: '700', margin: 0 }}>Visual IoT Live Telemetry</h1>
+          <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
+            Real-time sensor monitoring & historical stream analysis
+          </p>
+        </div>
+
+        {/* Day 4: Filter Controls */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <select
+            value={selectedMetric}
+            onChange={(e) => setSelectedMetric(e.target.value)}
+            style={{
+              background: '#1e293b',
+              color: '#f8fafc',
+              border: '1px solid #334155',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="all">📊 All Metrics</option>
+            <option value="temperature">🌡️ Temp Only</option>
+            <option value="humidity">💧 Humidity Only</option>
+          </select>
+
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            style={{
+              background: '#1e293b',
+              color: '#f8fafc',
+              border: '1px solid #334155',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="live">⚡ Live Stream (Real-Time)</option>
+            <option value="5m">⏱️ Last 5 Mins</option>
+            <option value="15m">⏳ Last 15 Mins</option>
+          </select>
+        </div>
       </div>
 
+      {/* Sensor Metric Cards */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
           gap: '16px',
-          marginBottom: '28px',
+          marginBottom: '20px',
         }}
       >
         <SensorCard
@@ -148,8 +205,28 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Day 4: Statistical Quick-Insight Bar */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '12px',
+          background: '#1e293b',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          border: '1px solid rgba(255, 255, 255, 0.05)',
+          marginBottom: '24px',
+          textAlign: 'center',
+          fontSize: '13px',
+        }}
+      >
+        <div><span style={{ color: '#94a3b8' }}>Max Peak:</span> <strong style={{ color: '#ef4444' }}>{stats.maxTemp}°C</strong></div>
+        <div><span style={{ color: '#94a3b8' }}>Lowest Dip:</span> <strong style={{ color: '#38bdf8' }}>{stats.minTemp}°C</strong></div>
+        <div><span style={{ color: '#94a3b8' }}>Current Avg:</span> <strong style={{ color: '#f59e0b' }}>{stats.avgTemp}°C</strong></div>
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-        {/* Stream Chart */}
+        {/* Stream Chart with Metric Selectivity */}
         <div
           style={{
             background: '#1e293b',
@@ -167,32 +244,20 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
                 <XAxis dataKey="time" stroke="#94a3b8" tick={{ fontSize: 11 }} />
                 <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#fff' }}
-                />
+                <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#fff' }} />
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
-                <Line
-                  type="monotone"
-                  dataKey="temperature"
-                  name="Temperature (°C)"
-                  stroke="#ef4444"
-                  strokeWidth={2}
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="humidity"
-                  name="Humidity (%)"
-                  stroke="#38bdf8"
-                  strokeWidth={2}
-                  dot={false}
-                />
+                {(selectedMetric === 'all' || selectedMetric === 'temperature') && (
+                  <Line type="monotone" dataKey="temperature" name="Temperature (°C)" stroke="#ef4444" strokeWidth={2} dot={false} />
+                )}
+                {(selectedMetric === 'all' || selectedMetric === 'humidity') && (
+                  <Line type="monotone" dataKey="humidity" name="Humidity (%)" stroke="#38bdf8" strokeWidth={2} dot={false} />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Week 3 Day 3: Active Rule Triggers & Alerts Panel */}
+        {/* Active Rule Triggers Panel */}
         <div
           style={{
             background: '#1e293b',
