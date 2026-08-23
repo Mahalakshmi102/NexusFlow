@@ -64,11 +64,15 @@ export default function Dashboard() {
     { id: 1, time: '10:00:15', type: 'INFO', msg: 'System initialized & telemetry connected' },
   ]);
 
-  // Week 3 Day 4: Metric Filter & Range States
   const [selectedMetric, setSelectedMetric] = useState('all');
   const [timeRange, setTimeRange] = useState('live');
 
+  // Week 3 Day 5: Stream Pause / Resume State
+  const [isPaused, setIsPaused] = useState(false);
+
   useEffect(() => {
+    if (isPaused) return;
+
     const interval = setInterval(() => {
       const now = new Date().toLocaleTimeString();
       const newTemp = Math.floor(Math.random() * (95 - 68 + 1)) + 68;
@@ -109,9 +113,8 @@ export default function Dashboard() {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isPaused]);
 
-  // Day 4: Summary Analytics Calculations
   const stats = useMemo(() => {
     if (!chartData.length) return { maxTemp: 0, minTemp: 0, avgTemp: 0 };
     const temps = chartData.map((d) => d.temperature);
@@ -121,18 +124,70 @@ export default function Dashboard() {
     return { maxTemp: max, minTemp: min, avgTemp: avg };
   }, [chartData]);
 
+  // Week 3 Day 5: CSV Export Handler
+  const exportTelemetryCSV = () => {
+    const headers = 'Time,Temperature(°C),Humidity(%)\n';
+    const rows = chartData
+      .map((row) => `${row.time},${row.temperature},${row.humidity}`)
+      .join('\n');
+    const blob = new Blob([headers + rows], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Telemetry_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  // Week 3 Day 5: Clear Alerts Handler
+  const clearAlerts = () => {
+    setAlerts([]);
+  };
+
   return (
     <div style={{ padding: '24px', background: '#0f172a', minHeight: 'calc(100vh - 60px)', color: '#ffffff' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h1 style={{ fontSize: '22px', fontWeight: '700', margin: 0 }}>Visual IoT Live Telemetry</h1>
           <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
-            Real-time sensor monitoring & historical stream analysis
+            Real-time sensor monitoring, historical stream analysis & controls
           </p>
         </div>
 
-        {/* Day 4: Filter Controls */}
-        <div style={{ display: 'flex', gap: '10px' }}>
+        {/* Day 5: Controls (Pause/Play, Export, Filters) */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setIsPaused(!isPaused)}
+            style={{
+              background: isPaused ? '#10b981' : '#f59e0b',
+              color: '#ffffff',
+              border: 'none',
+              padding: '6px 14px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+            }}
+          >
+            {isPaused ? '▶ Resume Stream' : '⏸ Pause Stream'}
+          </button>
+
+          <button
+            onClick={exportTelemetryCSV}
+            style={{
+              background: '#38bdf8',
+              color: '#0f172a',
+              border: 'none',
+              padding: '6px 14px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+            }}
+          >
+            📥 Export CSV
+          </button>
+
           <select
             value={selectedMetric}
             onChange={(e) => setSelectedMetric(e.target.value)}
@@ -166,7 +221,7 @@ export default function Dashboard() {
               cursor: 'pointer',
             }}
           >
-            <option value="live">⚡ Live Stream (Real-Time)</option>
+            <option value="live">⚡ Live Stream</option>
             <option value="5m">⏱️ Last 5 Mins</option>
             <option value="15m">⏳ Last 15 Mins</option>
           </select>
@@ -205,7 +260,7 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Day 4: Statistical Quick-Insight Bar */}
+      {/* Statistical Summary Bar */}
       <div
         style={{
           display: 'grid',
@@ -226,7 +281,7 @@ export default function Dashboard() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-        {/* Stream Chart with Metric Selectivity */}
+        {/* Live Stream Chart */}
         <div
           style={{
             background: '#1e293b',
@@ -235,9 +290,16 @@ export default function Dashboard() {
             border: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
-          <h3 style={{ fontSize: '15px', marginBottom: '16px', color: '#cbd5e1' }}>
-            📈 Live Sensor Telemetry Stream
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '15px', margin: 0, color: '#cbd5e1' }}>
+              📈 Live Sensor Telemetry Stream
+            </h3>
+            {isPaused && (
+              <span style={{ fontSize: '11px', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                PAUSED
+              </span>
+            )}
+          </div>
           <div style={{ width: '100%', height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
@@ -257,7 +319,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Active Rule Triggers Panel */}
+        {/* Active Rule Triggers & Alerts Panel with Clear History */}
         <div
           style={{
             background: '#1e293b',
@@ -270,31 +332,53 @@ export default function Dashboard() {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '15px', margin: 0, color: '#cbd5e1' }}>🚨 Active Rule Triggers</h3>
-            <span style={{ fontSize: '11px', background: '#334155', padding: '2px 8px', borderRadius: '12px', color: '#94a3b8' }}>
-              Live
-            </span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                onClick={clearAlerts}
+                style={{
+                  background: 'transparent',
+                  color: '#94a3b8',
+                  border: '1px solid #475569',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  padding: '2px 6px',
+                  cursor: 'pointer',
+                }}
+              >
+                Clear
+              </button>
+              <span style={{ fontSize: '11px', background: '#334155', padding: '2px 8px', borderRadius: '12px', color: '#94a3b8' }}>
+                Live
+              </span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', maxHeight: '250px' }}>
-            {alerts.map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  background: item.type === 'CRITICAL' ? 'rgba(239, 68, 68, 0.15)' : item.type === 'WARNING' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.1)',
-                  borderLeft: `4px solid ${item.type === 'CRITICAL' ? '#ef4444' : item.type === 'WARNING' ? '#f59e0b' : '#38bdf8'}`,
-                  borderRadius: '6px',
-                  padding: '10px 12px',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: '600', color: item.type === 'CRITICAL' ? '#fca5a5' : item.type === 'WARNING' ? '#fde68a' : '#bae6fd' }}>
-                    [{item.type}]
-                  </span>
-                  <span>{item.time}</span>
-                </div>
-                <div style={{ fontSize: '12px', color: '#f8fafc', fontWeight: '500' }}>{item.msg}</div>
+            {alerts.length === 0 ? (
+              <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', marginTop: '20px' }}>
+                No active alerts
               </div>
-            ))}
+            ) : (
+              alerts.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    background: item.type === 'CRITICAL' ? 'rgba(239, 68, 68, 0.15)' : item.type === 'WARNING' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.1)',
+                    borderLeft: `4px solid ${item.type === 'CRITICAL' ? '#ef4444' : item.type === 'WARNING' ? '#f59e0b' : '#38bdf8'}`,
+                    borderRadius: '6px',
+                    padding: '10px 12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: '600', color: item.type === 'CRITICAL' ? '#fca5a5' : item.type === 'WARNING' ? '#fde68a' : '#bae6fd' }}>
+                      [{item.type}]
+                    </span>
+                    <span>{item.time}</span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#f8fafc', fontWeight: '500' }}>{item.msg}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
