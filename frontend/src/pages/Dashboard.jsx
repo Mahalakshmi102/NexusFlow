@@ -1,60 +1,185 @@
-import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+﻿import React, { useState, useEffect } from 'react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend
+} from 'recharts';
 
-const mockTelemetryData = [
-  { time: '10:00', temperature: 65, vibration: 1.2 },
-  { time: '10:01', temperature: 72, vibration: 1.5 },
-  { time: '10:02', temperature: 81, vibration: 2.1 },
-  { time: '10:03', temperature: 85, vibration: 2.8 },
-  { time: '10:04', temperature: 78, vibration: 1.9 },
-  { time: '10:05', temperature: 90, vibration: 3.4 },
-];
+function SensorCard({ title, value, unit, icon, status = 'normal' }) {
+  const getStatusColor = () => {
+    switch (status) {
+      case 'warning':
+        return '#f59e0b';
+      case 'danger':
+        return '#ef4444';
+      default:
+        return '#38bdf8';
+    }
+  };
 
-export default function Dashboard() {
   return (
-    <div style={{ color: '#fff' }}>
-      <h3 style={{ marginBottom: '20px' }}>📊 Live IoT Telemetry Stream</h3>
-      
-      {/* Metrics Summary Cards */}
-      <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
-        <div style={cardStyle('#1e293b')}>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Active Sensors</p>
-          <h2>12 Nodes</h2>
-        </div>
-        <div style={cardStyle('#1e293b')}>
-          <p style={{ color: '#94a3b8', margin: 0 }}>Current Avg Temp</p>
-          <h2 style={{ color: '#ef4444' }}>81.8 °C</h2>
-        </div>
-        <div style={cardStyle('#1e293b')}>
-          <p style={{ color: '#94a3b8', margin: 0 }}>System Alerts</p>
-          <h2 style={{ color: '#f59e0b' }}>3 Triggered</h2>
+    <div
+      style={{
+        background: '#1e293b',
+        border: `1px solid ${getStatusColor()}`,
+        borderRadius: '10px',
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+      }}
+    >
+      <div>
+        <div style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '4px' }}>{title}</div>
+        <div style={{ fontSize: '24px', fontWeight: '700', color: '#f8fafc' }}>
+          {value !== undefined ? value : '--'} <span style={{ fontSize: '14px', color: '#cbd5e1' }}>{unit}</span>
         </div>
       </div>
+      <div style={{ fontSize: '28px', opacity: 0.9 }}>{icon}</div>
+    </div>
+  );
+}
 
-      {/* Sensor Chart */}
-      <div style={{ background: '#1e293b', padding: '20px', borderRadius: '8px' }}>
-        <h4 style={{ marginTop: 0 }}>Turbine Sensor - Real-time Temperature & Vibration</h4>
-        <div style={{ width: '100%', height: '300px' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={mockTelemetryData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="time" stroke="#94a3b8" />
-              <YAxis stroke="#94a3b8" />
-              <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155' }} />
-              <Line type="monotone" dataKey="temperature" stroke="#ef4444" strokeWidth={2} name="Temperature (°C)" />
-              <Line type="monotone" dataKey="vibration" stroke="#3b82f6" strokeWidth={2} name="Vibration (g)" />
-            </LineChart>
-          </ResponsiveContainer>
+export default function Dashboard() {
+  const [telemetry, setTelemetry] = useState({
+    temperature: 78,
+    humidity: 58,
+    pressure: 1013,
+  });
+
+  const [chartData, setChartData] = useState([
+    { time: '10:00:00', temperature: 72, humidity: 55 },
+    { time: '10:00:05', temperature: 74, humidity: 56 },
+    { time: '10:00:10', temperature: 75, humidity: 57 },
+    { time: '10:00:15', temperature: 78, humidity: 58 },
+  ]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date().toLocaleTimeString();
+      const newTemp = Math.floor(Math.random() * (90 - 70 + 1)) + 70;
+      const newHum = Math.floor(Math.random() * (65 - 50 + 1)) + 50;
+
+      setTelemetry((prev) => ({
+        ...prev,
+        temperature: newTemp,
+        humidity: newHum,
+      }));
+
+      setChartData((prev) => [
+        ...prev.slice(-9),
+        { time: now, temperature: newTemp, humidity: newHum },
+      ]);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{ padding: '24px', background: '#0f172a', minHeight: 'calc(100vh - 60px)', color: '#ffffff' }}>
+      <div style={{ marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: '700', margin: 0 }}>Visual IoT Live Telemetry</h1>
+        <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '4px' }}>
+          Real-time sensor monitoring & rule evaluations
+        </p>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '16px',
+          marginBottom: '28px',
+        }}
+      >
+        <SensorCard
+          title="Temperature"
+          value={telemetry.temperature}
+          unit="°C"
+          icon="🌡️"
+          status={telemetry.temperature > 80 ? 'danger' : 'normal'}
+        />
+        <SensorCard
+          title="Humidity"
+          value={telemetry.humidity}
+          unit="%"
+          icon="💧"
+          status="normal"
+        />
+        <SensorCard
+          title="Pressure"
+          value={telemetry.pressure}
+          unit="hPa"
+          icon="⏲️"
+          status="normal"
+        />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+        <div
+          style={{
+            background: '#1e293b',
+            padding: '20px',
+            borderRadius: '10px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          }}
+        >
+          <h3 style={{ fontSize: '15px', marginBottom: '16px', color: '#cbd5e1' }}>
+            📈 Live Sensor Telemetry Stream
+          </h3>
+          <div style={{ width: '100%', height: 280 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis dataKey="time" stroke="#94a3b8" tick={{ fontSize: 11 }} />
+                <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#fff' }}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px' }} />
+                <Line
+                  type="monotone"
+                  dataKey="temperature"
+                  name="Temperature (°C)"
+                  stroke="#ef4444"
+                  strokeWidth={2}
+                  dot={false}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="humidity"
+                  name="Humidity (%)"
+                  stroke="#38bdf8"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: '#1e293b',
+            padding: '20px',
+            borderRadius: '10px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            minHeight: '280px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#64748b',
+          }}
+        >
+          🚨 Active Rule Triggers & Alerts (Day 3 Implementation)
         </div>
       </div>
     </div>
   );
 }
-
-const cardStyle = (bgColor) => ({
-  background: bgColor,
-  padding: '15px 25px',
-  borderRadius: '8px',
-  flex: 1,
-  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-});
