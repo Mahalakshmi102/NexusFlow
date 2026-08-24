@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { socket } from '../services/socket';
 import {
   LineChart,
   Line,
@@ -69,6 +70,27 @@ export default function Dashboard() {
 
   // Week 3 Day 5: Stream Pause / Resume State
   const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    const handleRuleAlert = (data) => {
+      const now = new Date().toLocaleTimeString();
+      setAlerts((prev) => [
+        {
+          id: Date.now() + Math.random(),
+          time: now,
+          type: data.severity || data.type || 'CRITICAL',
+          msg: data.message || data.msg || (typeof data === 'string' ? data : 'Rule Alert Triggered'),
+        },
+        ...prev.slice(0, 19),
+      ]);
+    };
+
+    socket.on('rule:alert', handleRuleAlert);
+
+    return () => {
+      socket.off('rule:alert', handleRuleAlert);
+    };
+  }, []);
 
   useEffect(() => {
     if (isPaused) return;
