@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {Handle, Position} from 'reactflow';
 import './nodes.css';
 
-export default function ActionTriggerNode({Data,id}) {
+export default function ActionTriggerNode({data, id}) {
     const [actionType, setActionType] = useState(data?.actionType || 'alert');
 
     const handleActionChange = (e) => {
@@ -20,11 +20,11 @@ export default function ActionTriggerNode({Data,id}) {
 
             <div className="node-header"> Action Trigger</div>
             <div className="node-body">
-                <lable className="node-label">Select Action Type:</lable>
+                <label className="node-label">Select Action Type:</label>
                 <select
                 className="node-select"
                 value={actionType}
-                onChange={handleActionCHange}
+                onChange={handleActionChange}
                 >
                     <option value="alert"> Trigger ALert</option>
                     <option value="email"> Send Email</option>
