@@ -95,46 +95,30 @@ export default function Dashboard() {
   useEffect(() => {
     if (isPaused) return;
 
-    const interval = setInterval(() => {
+    const handleTelemetryStream = (data) => {
       const now = new Date().toLocaleTimeString();
-      const newTemp = Math.floor(Math.random() * (95 - 68 + 1)) + 68;
-      const newHum = Math.floor(Math.random() * (70 - 45 + 1)) + 45;
+      const newTemp = data.temperature;
+      const newHum = data.humidity;
+      const newPressure = data.pressure;
 
       setTelemetry((prev) => ({
         ...prev,
-        temperature: newTemp,
-        humidity: newHum,
+        temperature: newTemp ?? prev.temperature,
+        humidity: newHum ?? prev.humidity,
+        pressure: newPressure ?? prev.pressure,
       }));
 
-      setChartData((prev) => [
-        ...prev.slice(-14),
-        { time: now, temperature: newTemp, humidity: newHum },
-      ]);
+      setChartData((prev) => {
+        const newData = [...prev, { time: data.time || now, temperature: newTemp, humidity: newHum }];
+        return newData.length > 20 ? newData.slice(newData.length - 20) : newData;
+      });
+    };
 
-      if (newTemp > 85) {
-        setAlerts((prev) => [
-          {
-            id: Date.now(),
-            time: now,
-            type: 'CRITICAL',
-            msg: `High Temperature Alert! (${newTemp}°C > 85°C)`,
-          },
-          ...prev.slice(0, 5),
-        ]);
-      } else if (newHum > 65) {
-        setAlerts((prev) => [
-          {
-            id: Date.now(),
-            time: now,
-            type: 'WARNING',
-            msg: `High Humidity detected (${newHum}%)`,
-          },
-          ...prev.slice(0, 5),
-        ]);
-      }
-    }, 2000);
+    socket.on('telemetry:stream', handleTelemetryStream);
 
-    return () => clearInterval(interval);
+    return () => {
+      socket.off('telemetry:stream', handleTelemetryStream);
+    };
   }, [isPaused]);
 
   const stats = useMemo(() => {
