@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { socket } from '../services/socket';
 import {
   LineChart,
@@ -61,6 +61,8 @@ export default function Dashboard() {
     { time: '10:00:15', temperature: 78, humidity: 58 },
   ]);
 
+  const chartBufferRef = useRef([]);
+
   const [alerts, setAlerts] = useState([
     { id: 1, time: '10:00:15', type: 'INFO', msg: 'System initialized & telemetry connected' },
   ]);
@@ -95,6 +97,8 @@ export default function Dashboard() {
   useEffect(() => {
     if (isPaused) return;
 
+    let updateInterval;
+
     const handleTelemetryStream = (data) => {
       const now = new Date().toLocaleTimeString();
       const newTemp = data.temperature;
@@ -108,16 +112,31 @@ export default function Dashboard() {
         pressure: newPressure ?? prev.pressure,
       }));
 
-      setChartData((prev) => {
-        const newData = [...prev, { time: data.time || now, temperature: newTemp, humidity: newHum }];
-        return newData.length > 20 ? newData.slice(newData.length - 20) : newData;
+      // Push incoming data to a mutable ref buffer to avoid immediate re-renders
+      chartBufferRef.current.push({
+        time: data.time || now,
+        temperature: newTemp,
+        humidity: newHum,
       });
     };
 
     socket.on('telemetry:stream', handleTelemetryStream);
 
+    // Highly-optimized rolling array window update
+    // Flushes buffer to React state on an interval to batch updates
+    updateInterval = setInterval(() => {
+      if (chartBufferRef.current.length > 0) {
+        setChartData((prev) => {
+          const newData = [...prev, ...chartBufferRef.current];
+          chartBufferRef.current = []; // Clear buffer
+          return newData.slice(-20); // Keep last 20 elements
+        });
+      }
+    }, 1000); // 1-second rolling window interval
+
     return () => {
       socket.off('telemetry:stream', handleTelemetryStream);
+      clearInterval(updateInterval);
     };
   }, [isPaused]);
 
