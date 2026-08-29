@@ -62,6 +62,7 @@ export default function Dashboard() {
   ]);
 
   const chartBufferRef = useRef([]);
+  const latestTelemetryRef = useRef(null);
 
   const [alerts, setAlerts] = useState([
     { id: 1, time: '10:00:15', type: 'INFO', msg: 'System initialized & telemetry connected' },
@@ -105,12 +106,11 @@ export default function Dashboard() {
       const newHum = data.humidity;
       const newPressure = data.pressure;
 
-      setTelemetry((prev) => ({
-        ...prev,
-        temperature: newTemp ?? prev.temperature,
-        humidity: newHum ?? prev.humidity,
-        pressure: newPressure ?? prev.pressure,
-      }));
+      latestTelemetryRef.current = {
+        temperature: newTemp,
+        humidity: newHum,
+        pressure: newPressure,
+      };
 
       // Push incoming data to a mutable ref buffer to avoid immediate re-renders
       chartBufferRef.current.push({
@@ -125,6 +125,16 @@ export default function Dashboard() {
     // Highly-optimized rolling array window update
     // Flushes buffer to React state on an interval to batch updates
     updateInterval = setInterval(() => {
+      if (latestTelemetryRef.current) {
+        setTelemetry((prev) => ({
+          ...prev,
+          temperature: latestTelemetryRef.current.temperature ?? prev.temperature,
+          humidity: latestTelemetryRef.current.humidity ?? prev.humidity,
+          pressure: latestTelemetryRef.current.pressure ?? prev.pressure,
+        }));
+        latestTelemetryRef.current = null;
+      }
+
       if (chartBufferRef.current.length > 0) {
         setChartData((prev) => {
           const newData = [...prev, ...chartBufferRef.current];
