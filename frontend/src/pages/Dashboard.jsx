@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { socket } from '../services/socket';
 import {
   LineChart,
@@ -61,6 +61,8 @@ export default function Dashboard() {
     { time: '10:00:15', temperature: 78, humidity: 58 },
   ]);
 
+  const chartBufferRef = useRef([]);
+
   const [alerts, setAlerts] = useState([
     { id: 1, time: '10:00:15', type: 'INFO', msg: 'System initialized & telemetry connected' },
   ]);
@@ -95,46 +97,47 @@ export default function Dashboard() {
   useEffect(() => {
     if (isPaused) return;
 
-    const interval = setInterval(() => {
+    let updateInterval;
+
+    const handleTelemetryStream = (data) => {
       const now = new Date().toLocaleTimeString();
-      const newTemp = Math.floor(Math.random() * (95 - 68 + 1)) + 68;
-      const newHum = Math.floor(Math.random() * (70 - 45 + 1)) + 45;
+      const newTemp = data.temperature;
+      const newHum = data.humidity;
+      const newPressure = data.pressure;
 
       setTelemetry((prev) => ({
         ...prev,
-        temperature: newTemp,
-        humidity: newHum,
+        temperature: newTemp ?? prev.temperature,
+        humidity: newHum ?? prev.humidity,
+        pressure: newPressure ?? prev.pressure,
       }));
 
-      setChartData((prev) => [
-        ...prev.slice(-14),
-        { time: now, temperature: newTemp, humidity: newHum },
-      ]);
+      // Push incoming data to a mutable ref buffer to avoid immediate re-renders
+      chartBufferRef.current.push({
+        time: data.time || now,
+        temperature: newTemp,
+        humidity: newHum,
+      });
+    };
 
-      if (newTemp > 85) {
-        setAlerts((prev) => [
-          {
-            id: Date.now(),
-            time: now,
-            type: 'CRITICAL',
-            msg: `High Temperature Alert! (${newTemp}°C > 85°C)`,
-          },
-          ...prev.slice(0, 5),
-        ]);
-      } else if (newHum > 65) {
-        setAlerts((prev) => [
-          {
-            id: Date.now(),
-            time: now,
-            type: 'WARNING',
-            msg: `High Humidity detected (${newHum}%)`,
-          },
-          ...prev.slice(0, 5),
-        ]);
+    socket.on('telemetry:stream', handleTelemetryStream);
+
+    // Highly-optimized rolling array window update
+    // Flushes buffer to React state on an interval to batch updates
+    updateInterval = setInterval(() => {
+      if (chartBufferRef.current.length > 0) {
+        setChartData((prev) => {
+          const newData = [...prev, ...chartBufferRef.current];
+          chartBufferRef.current = []; // Clear buffer
+          return newData.slice(-20); // Keep last 20 elements
+        });
       }
-    }, 2000);
+    }, 1000); // 1-second rolling window interval
 
-    return () => clearInterval(interval);
+    return () => {
+      socket.off('telemetry:stream', handleTelemetryStream);
+      clearInterval(updateInterval);
+    };
   }, [isPaused]);
 
   const stats = useMemo(() => {
