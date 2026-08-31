@@ -13,6 +13,12 @@ class AlertService {
         this.alerts.push(newAlert);
 
         console.log('Alert created:', newAlert);
+        
+        const { getIO } = require('../sockets');
+        const io = getIO();
+        if (io) {
+            io.emit('rule:alert', newAlert);
+        }
 
         return newAlert;
     }

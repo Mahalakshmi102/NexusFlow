@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { socket } from '../services/socket';
+import { socket } from '../socket';
 import {
   LineChart,
   Line,
@@ -49,106 +49,83 @@ function SensorCard({ title, value, unit, icon, status = 'normal' }) {
 
 export default function Dashboard() {
   const [telemetry, setTelemetry] = useState({
-    temperature: 78,
-    humidity: 58,
-    pressure: 1013,
+    temperature: 0,
+    humidity: 0,
+    pressure: 0,
   });
 
-  const [chartData, setChartData] = useState([
-    { time: '10:00:00', temperature: 72, humidity: 55 },
-    { time: '10:00:05', temperature: 74, humidity: 56 },
-    { time: '10:00:10', temperature: 75, humidity: 57 },
-    { time: '10:00:15', temperature: 78, humidity: 58 },
-  ]);
-
-  const chartBufferRef = useRef([]);
-  const latestTelemetryRef = useRef(null);
+  const [chartData, setChartData] = useState([]);
 
   const [alerts, setAlerts] = useState([
-    { id: 1, time: '10:00:15', type: 'INFO', msg: 'System initialized & telemetry connected' },
+    { id: 1, time: new Date().toLocaleTimeString(), type: 'INFO', msg: 'System initialized & telemetry connected' },
   ]);
 
   const [selectedMetric, setSelectedMetric] = useState('all');
   const [timeRange, setTimeRange] = useState('live');
-
-  // Week 3 Day 5: Stream Pause / Resume State
   const [isPaused, setIsPaused] = useState(false);
+  const isPausedRef = useRef(isPaused);
 
   useEffect(() => {
-    const handleRuleAlert = (data) => {
-      const now = new Date().toLocaleTimeString();
-      setAlerts((prev) => [
-        {
-          id: Date.now() + Math.random(),
-          time: now,
-          type: data.severity || data.type || 'CRITICAL',
-          msg: data.message || data.msg || (typeof data === 'string' ? data : 'Rule Alert Triggered'),
-        },
-        ...prev.slice(0, 19),
-      ]);
-    };
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
 
-    socket.on('rule:alert', handleRuleAlert);
+  useEffect(() => {
+    function onTelemetryStream(data) {
+      if (isPausedRef.current) return;
+      
+      const points = Array.isArray(data) ? data : [data];
+
+      setTelemetry((prev) => {
+        let latestTemp = prev.temperature;
+        let latestHum = prev.humidity;
+        let latestPres = prev.pressure;
+
+        const newChartPoints = points.map(p => {
+           if (p.temperature !== undefined) latestTemp = p.temperature;
+           if (p.humidity !== undefined) latestHum = p.humidity;
+           if (p.pressure !== undefined) latestPres = p.pressure;
+
+           return {
+             time: new Date(p.timestamp || Date.now()).toLocaleTimeString(),
+             temperature: p.temperature || latestTemp,
+             humidity: p.humidity || latestHum,
+           };
+        });
+
+        setChartData((prevChart) => {
+          const updated = [...prevChart, ...newChartPoints];
+          // keep last 20 points
+          return updated.slice(-20);
+        });
+
+        return {
+          temperature: latestTemp,
+          humidity: latestHum,
+          pressure: latestPres,
+        };
+      });
+    }
+
+    function onRuleAlert(alert) {
+       setAlerts((prev) => [
+          {
+            id: alert.id || Date.now(),
+            time: new Date(alert.timestamp || Date.now()).toLocaleTimeString(),
+            type: alert.message && alert.message.toLowerCase().includes('critical') ? 'CRITICAL' : 'WARNING',
+            msg: `[${alert.nodeName || 'Alert'}] ${alert.message} (${alert.metric}: ${alert.value})`,
+          },
+          ...prev.slice(0, 9),
+        ]);
+    }
+
+    socket.on('telemetry:stream', onTelemetryStream);
+    socket.on('rule:alert', onRuleAlert);
 
     return () => {
-      socket.off('rule:alert', handleRuleAlert);
+      socket.off('telemetry:stream', onTelemetryStream);
+      socket.off('rule:alert', onRuleAlert);
     };
   }, []);
-
-  useEffect(() => {
-    if (isPaused) return;
-
-    let updateInterval;
-
-    const handleTelemetryStream = (data) => {
-      const now = new Date().toLocaleTimeString();
-      const newTemp = data.temperature;
-      const newHum = data.humidity;
-      const newPressure = data.pressure;
-
-      latestTelemetryRef.current = {
-        temperature: newTemp,
-        humidity: newHum,
-        pressure: newPressure,
-      };
-
-      // Push incoming data to a mutable ref buffer to avoid immediate re-renders
-      chartBufferRef.current.push({
-        time: data.time || now,
-        temperature: newTemp,
-        humidity: newHum,
-      });
-    };
-
-    socket.on('telemetry:stream', handleTelemetryStream);
-
-    // Highly-optimized rolling array window update
-    // Flushes buffer to React state on an interval to batch updates
-    updateInterval = setInterval(() => {
-      if (latestTelemetryRef.current) {
-        setTelemetry((prev) => ({
-          ...prev,
-          temperature: latestTelemetryRef.current.temperature ?? prev.temperature,
-          humidity: latestTelemetryRef.current.humidity ?? prev.humidity,
-          pressure: latestTelemetryRef.current.pressure ?? prev.pressure,
-        }));
-        latestTelemetryRef.current = null;
-      }
-
-      if (chartBufferRef.current.length > 0) {
-        setChartData((prev) => {
-          const newData = [...prev, ...chartBufferRef.current];
-          chartBufferRef.current = []; // Clear buffer
-          return newData.slice(-20); // Keep last 20 elements
-        });
-      }
-    }, 1000); // 1-second rolling window interval
-
-    return () => {
-      socket.off('telemetry:stream', handleTelemetryStream);
-      clearInterval(updateInterval);
-    };
-  }, [isPaused]);
 
   const stats = useMemo(() => {
     if (!chartData.length) return { maxTemp: 0, minTemp: 0, avgTemp: 0 };
