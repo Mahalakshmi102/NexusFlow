@@ -7,7 +7,7 @@ const path = require('path');
 const { Server } = require('socket.io');
 
 const { connectDB } = require('./config/db');
-const { initIO } = require('./sockets');
+const { initIO, initSubscriptions } = require('./sockets');
 const models = require('./models');
 
 const TelemetryHub = require('./services/telemetry.hub');
@@ -35,6 +35,8 @@ async function main() {
   const telemetryService = new TelemetryService(db);
   const alertService = new AlertService();
   const graphCompiler = new GraphCompiler(telemetryHub, alertService);
+
+  initSubscriptions(telemetryHub);
 
   app.locals.db = db;
   app.locals.telemetryHub = telemetryHub;
