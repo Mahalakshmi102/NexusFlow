@@ -4,6 +4,7 @@ const Pipeline = require('./Pipeline');
 const Telemetry = require('./Telemetry');
 const Alert = require('./Alert');
 const AuditLog = require('./AuditLog');
+const Webhook = require('./Webhook');
 
 module.exports = {
   User,
@@ -11,5 +12,6 @@ module.exports = {
   Pipeline,
   Telemetry,
   Alert,
-  AuditLog
+  AuditLog,
+  Webhook
 };
