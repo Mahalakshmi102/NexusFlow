@@ -1,8 +1,10 @@
 const { Subject } = require('rxjs');
+const { bufferTime, filter } = require('rxjs/operators');
 
 class TelemetryHub {
     constructor() {
         this.subjects = new Map();
+        this.globalSubject = new Subject();
     }
 
     forDevice(deviceId) {
@@ -22,6 +24,15 @@ class TelemetryHub {
         if (subject) {
             subject.next(point);
         }
+        
+        this.globalSubject.next(point);
+    }
+    
+    getGlobalStream() {
+        return this.globalSubject.asObservable().pipe(
+            bufferTime(1000),
+            filter(points => points.length > 0)
+        );
     }
 }
 
