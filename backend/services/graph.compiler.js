@@ -1,9 +1,10 @@
 const { map, filter, scan } = require('rxjs/operators');
 
 class GraphCompiler {
-    constructor(telemetryHub, alertService) {
+    constructor(telemetryHub, alertService, webhookService) {
         this.telemetryHub = telemetryHub;
         this.alertService = alertService;
+        this.webhookService = webhookService;
         this.activeSubscriptions = new Map();
     }
 
@@ -80,6 +81,41 @@ class GraphCompiler {
                         error: (err) => {
                             console.error(
                                 `Graph ${graphId} alert stream error:`,
+                                err.message
+                            );
+                        }
+                    });
+
+                    subscriptions.push(subscription);
+                    return;
+                }
+
+                case 'webhookNode': {
+                    const subscription = output$.subscribe({
+                        next: (item) => {
+                            if (!this.webhookService) return;
+                            
+                            const payload = {
+                                graphId,
+                                graphName: graph.name || 'Untitled graph',
+                                nodeId: node.id,
+                                deviceId: sourceNode.data?.deviceId,
+                                metric: sourceNode.data?.field || 'temperature',
+                                value: item.value,
+                                timestamp: new Date()
+                            };
+
+                            const targetUrl = node.data?.targetUrl;
+                            const method = node.data?.method || 'POST';
+                            
+                            if (targetUrl) {
+                                this.webhookService.execute(targetUrl, method, payload);
+                            }
+                        },
+
+                        error: (err) => {
+                            console.error(
+                                `Graph ${graphId} webhook stream error:`,
                                 err.message
                             );
                         }

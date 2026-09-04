@@ -13,6 +13,7 @@ const models = require('./models');
 const TelemetryHub = require('./services/telemetry.hub');
 const TelemetryService = require('./services/telemetry.service');
 const AlertService = require('./services/alert.service');
+const WebhookService = require('./services/webhook.service');
 const GraphCompiler = require('./services/graph.compiler');
 
 const telemetryRoutes = require('./routes/telemetry.routes');
@@ -34,7 +35,8 @@ async function main() {
   const telemetryHub = new TelemetryHub();
   const telemetryService = new TelemetryService(db);
   const alertService = new AlertService();
-  const graphCompiler = new GraphCompiler(telemetryHub, alertService);
+  const webhookService = new WebhookService();
+  const graphCompiler = new GraphCompiler(telemetryHub, alertService, webhookService);
 
   initSubscriptions(telemetryHub);
 
@@ -42,6 +44,7 @@ async function main() {
   app.locals.telemetryHub = telemetryHub;
   app.locals.telemetryService = telemetryService;
   app.locals.alertService = alertService;
+  app.locals.webhookService = webhookService;
   app.locals.graphCompiler = graphCompiler;
 
   app.use(cors());
