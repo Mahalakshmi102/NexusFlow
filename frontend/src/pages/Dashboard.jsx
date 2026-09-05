@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useMemo } from 'react';
+import WebhookConfigModal from '../components/WebhookConfigModal';
 import {
   LineChart,
   Line,
@@ -63,7 +64,8 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState([
     { id: 1, time: '10:00:15', type: 'INFO', msg: 'System initialized & telemetry connected' },
   ]);
-
+      const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);
+  const [configuredWebhooks, setConfiguredWebhooks] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState('all');
   const [timeRange, setTimeRange] = useState('live');
 
@@ -123,6 +125,18 @@ export default function Dashboard() {
     const avg = Math.round(temps.reduce((a, b) => a + b, 0) / temps.length);
     return { maxTemp: max, minTemp: min, avgTemp: avg };
   }, [chartData]);
+  const handleSaveWebhook = (webhook) => {
+    setConfiguredWebhooks((prev) => [...prev, webhook]);
+    setAlerts((prev) => [
+      {
+        id: Date.now(),
+        time: new Date().toLocaleTimeString(),
+        type: 'INFO',
+        msg: `New Webhook Configured: "${webhook.name}" (${webhook.method})`,
+      },
+      ...prev,
+    ]);
+  };
 
   // Week 3 Day 5: CSV Export Handler
   const exportTelemetryCSV = () => {
@@ -153,9 +167,29 @@ export default function Dashboard() {
             Real-time sensor monitoring, historical stream analysis & controls
           </p>
         </div>
-
-        {/* Day 5: Controls (Pause/Play, Export, Filters) */}
+{/* Day 5: Controls (Pause/Play, Export, Filters) */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Add Webhook Button */}
+          <button
+            onClick={() => setIsWebhookModalOpen(true)}
+            style={{
+              background: '#8b5cf6',
+              color: '#ffffff',
+              border: 'none',
+              padding: '6px 14px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            🔗 Add Webhook
+          </button>
+
+          {/* Pause / Resume Button */}
           <button
             onClick={() => setIsPaused(!isPaused)}
             style={{
@@ -382,6 +416,12 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      {/* Webhook Configuration Modal */}
+      <WebhookConfigModal
+        isOpen={isWebhookModalOpen}
+        onClose={() => setIsWebhookModalOpen(false)}
+        onSave={handleSaveWebhook}
+      />
     </div>
   );
 }
