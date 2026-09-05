@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+﻿import WebhookListTable from '../components/WebhookListTable';
+import React, { useState, useEffect, useMemo } from 'react';
 import WebhookConfigModal from '../components/WebhookConfigModal';
 import {
   LineChart,
@@ -64,7 +65,7 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState([
     { id: 1, time: '10:00:15', type: 'INFO', msg: 'System initialized & telemetry connected' },
   ]);
-      const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);
+  const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);
   const [configuredWebhooks, setConfiguredWebhooks] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState('all');
   const [timeRange, setTimeRange] = useState('live');
@@ -125,6 +126,7 @@ export default function Dashboard() {
     const avg = Math.round(temps.reduce((a, b) => a + b, 0) / temps.length);
     return { maxTemp: max, minTemp: min, avgTemp: avg };
   }, [chartData]);
+
   const handleSaveWebhook = (webhook) => {
     setConfiguredWebhooks((prev) => [...prev, webhook]);
     setAlerts((prev) => [
@@ -136,6 +138,21 @@ export default function Dashboard() {
       },
       ...prev,
     ]);
+  };
+
+  // Week 4 Day 2: Toggle & Delete Handlers
+  const handleToggleWebhook = (id) => {
+    setConfiguredWebhooks((prev) =>
+      prev.map((hook) =>
+        hook.id === id
+          ? { ...hook, status: hook.status === 'active' ? 'paused' : 'active' }
+          : hook
+      )
+    );
+  };
+
+  const handleDeleteWebhook = (id) => {
+    setConfiguredWebhooks((prev) => prev.filter((hook) => hook.id !== id));
   };
 
   // Week 3 Day 5: CSV Export Handler
@@ -167,7 +184,8 @@ export default function Dashboard() {
             Real-time sensor monitoring, historical stream analysis & controls
           </p>
         </div>
-{/* Day 5: Controls (Pause/Play, Export, Filters) */}
+
+        {/* Controls (Pause/Play, Export, Filters, Add Webhook) */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Add Webhook Button */}
           <button
@@ -416,6 +434,14 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Week 4 Day 2: Webhook Management Table */}
+      <WebhookListTable
+        webhooks={configuredWebhooks}
+        onToggleStatus={handleToggleWebhook}
+        onDelete={handleDeleteWebhook}
+      />
+
       {/* Webhook Configuration Modal */}
       <WebhookConfigModal
         isOpen={isWebhookModalOpen}
