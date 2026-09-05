@@ -1,12 +1,12 @@
 const { Router } = require('express');
 const { ObjectId } = require('mongodb');
-const { getDb } = require('../config/db');
+const mongoose = require('mongoose');
 
 const router = Router();
 
 router.get('/', async (req, res) => {
     try {
-        const db = getDb();
+        const db = mongoose.connection.db;
 
         const graphs = await db
             .collection('graphs')
@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
     try {
-        const db = getDb();
+        const db = mongoose.connection.db;
 
         const graph = {
             ...req.body,
@@ -54,7 +54,7 @@ router.post('/', async (req, res) => {
 
 router.post('/compile', async (req, res) => {
     try {
-        const db = getDb();
+        const db = mongoose.connection.db;
         const { graphCompiler } = req.app.locals;
         const graphData = req.body;
 
@@ -90,7 +90,7 @@ router.post('/compile', async (req, res) => {
 
 router.post('/:id/deploy', async (req, res) => {
     try {
-        const db = getDb();
+        const db = mongoose.connection.db;
         const { graphCompiler } = req.app.locals;
 
         const graph = await db
@@ -127,7 +127,7 @@ router.post('/:id/deploy', async (req, res) => {
 
 router.post('/:id/undeploy', async (req, res) => {
     try {
-        const db = getDb();
+        const db = mongoose.connection.db;
         const { graphCompiler } = req.app.locals;
 
         graphCompiler.undeploy(req.params.id);

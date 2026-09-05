@@ -17,6 +17,8 @@ const GraphCompiler = require('./services/graph.compiler');
 
 const telemetryRoutes = require('./routes/telemetry.routes');
 const graphRoutes = require('./routes/graph.routes');
+const webhookRoutes = require('./routes/webhook.routes');
+const webhookService = require('./services/webhook.service');
 
 const PORT = process.env.PORT || 5000;
 
@@ -34,7 +36,7 @@ async function main() {
   const telemetryHub = new TelemetryHub();
   const telemetryService = new TelemetryService(db);
   const alertService = new AlertService();
-  const graphCompiler = new GraphCompiler(telemetryHub, alertService);
+  const graphCompiler = new GraphCompiler(telemetryHub, alertService, webhookService);
 
   initSubscriptions(telemetryHub);
 
@@ -43,6 +45,7 @@ async function main() {
   app.locals.telemetryService = telemetryService;
   app.locals.alertService = alertService;
   app.locals.graphCompiler = graphCompiler;
+  app.locals.webhookService = webhookService;
 
   app.use(cors());
   app.use(express.json({ limit: '20mb' }));
@@ -75,6 +78,7 @@ async function main() {
 
   app.use('/api/telemetry', telemetryRoutes);
   app.use('/api/graphs', graphRoutes);
+  app.use('/api/webhooks', webhookRoutes);
 
   // Serve static frontend in production
   if (process.env.NODE_ENV === 'production') {
