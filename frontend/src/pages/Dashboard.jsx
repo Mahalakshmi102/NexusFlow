@@ -1,6 +1,7 @@
 ﻿import WebhookListTable from '../components/WebhookListTable';
 import React, { useState, useEffect, useMemo } from 'react';
 import WebhookConfigModal from '../components/WebhookConfigModal';
+import WebhookLogsModal from '../components/WebhookLogsModal';
 import {
   LineChart,
   Line,
@@ -69,6 +70,11 @@ export default function Dashboard() {
   const [configuredWebhooks, setConfiguredWebhooks] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState('all');
   const [timeRange, setTimeRange] = useState('live');
+
+  // Week 4 Day 4: Webhook Audit Logs State
+  const [webhookLogs, setWebhookLogs] = useState([]);
+  const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+  const [selectedHookForLogs, setSelectedHookForLogs] = useState(null);
 
   // Week 3 Day 5: Stream Pause / Resume State
   const [isPaused, setIsPaused] = useState(false);
@@ -140,7 +146,6 @@ export default function Dashboard() {
     ]);
   };
 
-  // Week 4 Day 2: Toggle & Delete Handlers
   const handleToggleWebhook = (id) => {
     setConfiguredWebhooks((prev) =>
       prev.map((hook) =>
@@ -155,27 +160,55 @@ export default function Dashboard() {
     setConfiguredWebhooks((prev) => prev.filter((hook) => hook.id !== id));
   };
 
-  // Week 4 Day 3: Simulate Webhook Dispatch
+  // Week 4 Day 3 & 4: Dispatch Simulation with Audit Trail Logging
   const handleTestWebhook = (webhook) => {
-    const mockPayload = {
+    const payload = {
       event: 'TELEMETRY_ALERT',
       timestamp: new Date().toISOString(),
       source: 'NexusFlow IoT Gateway',
       data: telemetry,
     };
 
+    const latency = Math.floor(Math.random() * 120) + 45;
+    const isSuccess = Math.random() > 0.15; // 85% success rate simulation
+
+    const newLog = {
+      id: Date.now(),
+      webhookId: webhook.id,
+      webhookName: webhook.name,
+      endpoint: webhook.url,
+      method: webhook.method,
+      time: new Date().toLocaleTimeString(),
+      status: isSuccess ? 200 : 500,
+      statusText: isSuccess ? 'OK' : 'Internal Server Error',
+      latency,
+      payload,
+    };
+
+    setWebhookLogs((prev) => [newLog, ...prev]);
+
     setAlerts((prev) => [
       {
         id: Date.now(),
-        time: new Date().toLocaleTimeString(),
-        type: 'INFO',
-        msg: `🚀 Webhook Dispatched to [${webhook.name}] -> 200 OK (Payload Delivered)`,
+        time: newLog.time,
+        type: isSuccess ? 'INFO' : 'CRITICAL',
+        msg: isSuccess
+          ? `🚀 Webhook [${webhook.name}] -> 200 OK (${latency}ms)`
+          : `❌ Webhook [${webhook.name}] -> Delivery Failed 500`,
       },
       ...prev,
     ]);
   };
 
-  // Week 3 Day 5: CSV Export Handler
+  const handleOpenLogsModal = (hook) => {
+    setSelectedHookForLogs(hook);
+    setIsLogsModalOpen(true);
+  };
+
+  const filteredLogs = selectedHookForLogs
+    ? webhookLogs.filter((l) => l.webhookId === selectedHookForLogs.id)
+    : webhookLogs;
+
   const exportTelemetryCSV = () => {
     const headers = 'Time,Temperature(°C),Humidity(%)\n';
     const rows = chartData
@@ -190,7 +223,6 @@ export default function Dashboard() {
     window.URL.revokeObjectURL(url);
   };
 
-  // Week 3 Day 5: Clear Alerts Handler
   const clearAlerts = () => {
     setAlerts([]);
   };
@@ -205,9 +237,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Controls (Pause/Play, Export, Filters, Add Webhook) */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Add Webhook Button */}
           <button
             onClick={() => setIsWebhookModalOpen(true)}
             style={{
@@ -227,7 +257,6 @@ export default function Dashboard() {
             🔗 Add Webhook
           </button>
 
-          {/* Pause / Resume Button */}
           <button
             onClick={() => setIsPaused(!isPaused)}
             style={{
@@ -391,7 +420,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Active Rule Triggers & Alerts Panel with Clear History */}
+        {/* Active Rule Triggers & Alerts Panel */}
         <div
           style={{
             background: '#1e293b',
@@ -455,19 +484,28 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Week 4 Day 2 & 3: Webhook Management Table */}
+      {/* Week 4 Day 2, 3 & 4: Webhook Management Table */}
       <WebhookListTable
         webhooks={configuredWebhooks}
         onToggleStatus={handleToggleWebhook}
         onDelete={handleDeleteWebhook}
         onTestWebhook={handleTestWebhook}
+        onOpenLogs={handleOpenLogsModal}
       />
 
-      {/* Webhook Configuration Modal */}
+      {/* Week 4 Day 1: Webhook Configuration Modal */}
       <WebhookConfigModal
         isOpen={isWebhookModalOpen}
         onClose={() => setIsWebhookModalOpen(false)}
         onSave={handleSaveWebhook}
+      />
+
+      {/* Week 4 Day 4: Webhook Delivery Logs Modal */}
+      <WebhookLogsModal
+        isOpen={isLogsModalOpen}
+        onClose={() => setIsLogsModalOpen(false)}
+        logs={filteredLogs}
+        webhookName={selectedHookForLogs ? selectedHookForLogs.name : 'All Webhooks'}
       />
     </div>
   );
