@@ -155,6 +155,26 @@ export default function Dashboard() {
     setConfiguredWebhooks((prev) => prev.filter((hook) => hook.id !== id));
   };
 
+  // Week 4 Day 3: Simulate Webhook Dispatch
+  const handleTestWebhook = (webhook) => {
+    const mockPayload = {
+      event: 'TELEMETRY_ALERT',
+      timestamp: new Date().toISOString(),
+      source: 'NexusFlow IoT Gateway',
+      data: telemetry,
+    };
+
+    setAlerts((prev) => [
+      {
+        id: Date.now(),
+        time: new Date().toLocaleTimeString(),
+        type: 'INFO',
+        msg: `🚀 Webhook Dispatched to [${webhook.name}] -> 200 OK (Payload Delivered)`,
+      },
+      ...prev,
+    ]);
+  };
+
   // Week 3 Day 5: CSV Export Handler
   const exportTelemetryCSV = () => {
     const headers = 'Time,Temperature(°C),Humidity(%)\n';
@@ -435,11 +455,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Week 4 Day 2: Webhook Management Table */}
+      {/* Week 4 Day 2 & 3: Webhook Management Table */}
       <WebhookListTable
         webhooks={configuredWebhooks}
         onToggleStatus={handleToggleWebhook}
         onDelete={handleDeleteWebhook}
+        onTestWebhook={handleTestWebhook}
       />
 
       {/* Webhook Configuration Modal */}

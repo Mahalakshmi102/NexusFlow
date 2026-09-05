@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function WebhookListTable({ webhooks, onToggleStatus, onDelete }) {
+export default function WebhookListTable({ webhooks, onToggleStatus, onDelete, onTestWebhook }) {
   if (!webhooks || webhooks.length === 0) {
     return (
       <div style={{
@@ -30,7 +30,7 @@ export default function WebhookListTable({ webhooks, onToggleStatus, onDelete })
         <h3 style={{ fontSize: '15px', margin: 0, color: '#38bdf8', fontWeight: '600' }}>
           📡 Registered Webhook Endpoints ({webhooks.length})
         </h3>
-        <span style={{ fontSize: '11px', color: '#94a3b8' }}>Live Dispatcher Status</span>
+        <span style={{ fontSize: '11px', color: '#94a3b8' }}>Live Dispatcher & Simulation</span>
       </div>
 
       <div style={{ overflowX: 'auto' }}>
@@ -40,14 +40,13 @@ export default function WebhookListTable({ webhooks, onToggleStatus, onDelete })
               <th style={{ padding: '10px 8px' }}>NAME</th>
               <th style={{ padding: '10px 8px' }}>METHOD</th>
               <th style={{ padding: '10px 8px' }}>TARGET URL</th>
-              <th style={{ padding: '10px 8px' }}>CREATED</th>
               <th style={{ padding: '10px 8px' }}>STATUS</th>
               <th style={{ padding: '10px 8px', textAlign: 'right' }}>ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             {webhooks.map((hook) => (
-              <tr key={hook.id} style={{ borderBottom: '1px solid #1e293b' }}>
+              <tr key={hook.id} style={{ borderBottom: '1px solid #334155' }}>
                 <td style={{ padding: '12px 8px', fontWeight: '600', color: '#f8fafc' }}>
                   {hook.name}
                 </td>
@@ -63,11 +62,8 @@ export default function WebhookListTable({ webhooks, onToggleStatus, onDelete })
                     {hook.method}
                   </span>
                 </td>
-                <td style={{ padding: '12px 8px', color: '#94a3b8', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <td style={{ padding: '12px 8px', color: '#94a3b8', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {hook.url}
-                </td>
-                <td style={{ padding: '12px 8px', color: '#64748b', fontSize: '12px' }}>
-                  {hook.createdAt || 'Live'}
                 </td>
                 <td style={{ padding: '12px 8px' }}>
                   <button
@@ -87,19 +83,38 @@ export default function WebhookListTable({ webhooks, onToggleStatus, onDelete })
                   </button>
                 </td>
                 <td style={{ padding: '12px 8px', textAlign: 'right' }}>
-                  <button
-                    onClick={() => onDelete(hook.id)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: '#ef4444',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
-                    title="Delete Webhook"
-                  >
-                    🗑️
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => onTestWebhook(hook)}
+                      disabled={hook.status !== 'active'}
+                      style={{
+                        background: hook.status === 'active' ? '#38bdf8' : '#334155',
+                        color: hook.status === 'active' ? '#0f172a' : '#64748b',
+                        border: 'none',
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        cursor: hook.status === 'active' ? 'pointer' : 'not-allowed'
+                      }}
+                      title="Simulate Event Payload"
+                    >
+                      ⚡ Test
+                    </button>
+                    <button
+                      onClick={() => onDelete(hook.id)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                      title="Delete Webhook"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
