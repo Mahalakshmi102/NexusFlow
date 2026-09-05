@@ -90,37 +90,37 @@ class GraphCompiler {
                     return;
                 }
 
-                case 'webhookNode': {
+                case 'action': {
                     const subscription = output$.subscribe({
                         next: (item) => {
-                            if (!this.webhookService) return;
-                            
-                            const payload = {
-                                graphId,
-                                graphName: graph.name || 'Untitled graph',
-                                nodeId: node.id,
-                                deviceId: sourceNode.data?.deviceId,
-                                metric: sourceNode.data?.field || 'temperature',
-                                value: item.value,
-                                timestamp: new Date()
-                            };
-
-                            const targetUrl = node.data?.targetUrl;
-                            const method = node.data?.method || 'POST';
-                            
-                            if (targetUrl) {
-                                this.webhookService.execute(targetUrl, method, payload);
+                            if (node.data?.actionType === 'webhook' && node.data?.selectedWebhookId && this.webhookService) {
+                                this.webhookService.executeWebhook(
+                                    node.data.selectedWebhookId,
+                                    {
+                                        deviceId: sourceNode.data.deviceId,
+                                        metric: sourceNode.data.field || 'temperature',
+                                        value: item.value,
+                                        timestamp: new Date().toISOString()
+                                    }
+                                );
+                            } else if (node.data?.actionType === 'alert') {
+                                this.alertService.sendAlert({
+                                    graphId,
+                                    graphName: graph.name || 'Untitled graph',
+                                    nodeId: node.id,
+                                    nodeName: node.data?.name || node.id,
+                                    deviceId: sourceNode.data.deviceId,
+                                    metric: sourceNode.data.field || 'temperature',
+                                    value: item.value,
+                                    message: node.data?.message || 'Action Alert triggered',
+                                    timestamp: new Date()
+                                });
                             }
                         },
-
                         error: (err) => {
-                            console.error(
-                                `Graph ${graphId} webhook stream error:`,
-                                err.message
-                            );
+                            console.error(`Graph ${graphId} action stream error:`, err.message);
                         }
                     });
-
                     subscriptions.push(subscription);
                     return;
                 }

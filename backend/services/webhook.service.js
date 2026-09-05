@@ -1,46 +1,111 @@
+const axios = require('axios');
+const Webhook = require('../models/Webhook');
+const WebhookLog = require('../models/WebhookLog');
+
 class WebhookService {
-    constructor() {}
+    constructor() {
+        this.maxRetries = 3;
+    }
 
-    async execute(url, method = 'POST', payload = {}, customHeaders = {}) {
-        const headers = {
-            'Content-Type': 'application/json',
-            ...customHeaders
-        };
+    /**
+     * Replaces placeholders in the mapping template with actual data values
+     */
+    _mapPayload(template, data) {
+        if (!template || Object.keys(template).length === 0) {
+            return data; // default to raw data if no mapping
+        }
 
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout for security and performance
+        const mapped = {};
+        for (const [key, value] of Object.entries(template)) {
+            if (typeof value === 'string' && value.startsWith('{{') && value.endsWith('}}')) {
+                const dataPath = value.replace('{{', '').replace('}}', '').trim();
+                // simple dot-notation access
+                mapped[key] = dataPath.split('.').reduce((acc, part) => acc && acc[part], data);
+            } else {
+                mapped[key] = value;
+            }
+        }
+        return mapped;
+    }
 
+    /**
+     * Executes webhook with exponential backoff retry logic
+     */
+    async executeWebhook(webhookId, payloadData, attempt = 1) {
         try {
-            console.log(`[WebhookService] Dispatching ${method} request to ${url}`);
+            const webhook = await Webhook.findById(webhookId);
+            if (!webhook || !webhook.isActive) return;
+
+            const mappedPayload = this._mapPayload(webhook.payloadMapping, payloadData);
             
-            const options = {
-                method: method.toUpperCase(),
-                headers,
-                signal: controller.signal
-            };
-
-            if (options.method !== 'GET' && options.method !== 'HEAD') {
-                options.body = JSON.stringify(payload);
+            const headers = {};
+            if (webhook.headers && Array.isArray(webhook.headers)) {
+                webhook.headers.forEach(h => {
+                    if (h.key && h.value) headers[h.key] = h.value;
+                });
             }
+            
+            const startTime = Date.now();
+            try {
+                const response = await axios({
+                    method: webhook.method || 'POST',
+                    url: webhook.url,
+                    data: mappedPayload,
+                    headers,
+                    timeout: 5000 // 5 seconds timeout
+                });
 
-            const response = await fetch(url, options);
+                const executionTimeMs = Date.now() - startTime;
 
-            clearTimeout(timeout);
+                // Log success
+                await WebhookLog.create({
+                    webhook: webhook._id,
+                    status: 'SUCCESS',
+                    requestPayload: mappedPayload,
+                    responseStatus: response.status,
+                    responseBody: response.data,
+                    executionTimeMs
+                });
 
-            if (!response.ok) {
-                console.error(`[WebhookService] Request failed with status ${response.status}`);
-                return { success: false, status: response.status };
+                webhook.lastTriggeredAt = new Date();
+                webhook.successCount += 1;
+                await webhook.save();
+
+            } catch (error) {
+                const executionTimeMs = Date.now() - startTime;
+                const isTimeout = error.code === 'ECONNABORTED';
+                const status = error.response ? error.response.status : null;
+                const errorMsg = error.message || 'Unknown error';
+
+                if (attempt < this.maxRetries) {
+                    // Exponential backoff: 1s, 2s, 4s...
+                    const delay = Math.pow(2, attempt - 1) * 1000;
+                    console.log(`Webhook ${webhook.name} failed (${errorMsg}). Retrying in ${delay}ms... (Attempt ${attempt}/${this.maxRetries})`);
+                    
+                    setTimeout(() => {
+                        this.executeWebhook(webhookId, payloadData, attempt + 1);
+                    }, delay);
+                } else {
+                    // Log failure after max retries
+                    await WebhookLog.create({
+                        webhook: webhook._id,
+                        status: 'FAILED',
+                        requestPayload: mappedPayload,
+                        responseStatus: status,
+                        error: isTimeout ? 'Timeout exceeded' : errorMsg,
+                        executionTimeMs
+                    });
+
+                    webhook.lastTriggeredAt = new Date();
+                    webhook.errorCount += 1;
+                    await webhook.save();
+                    console.error(`Webhook ${webhook.name} failed completely after ${this.maxRetries} retries.`);
+                }
             }
-
-            console.log(`[WebhookService] Successfully executed webhook to ${url}`);
-            return { success: true, status: response.status };
-
-        } catch (error) {
-            clearTimeout(timeout);
-            console.error(`[WebhookService] Error executing webhook: ${error.message}`);
-            return { success: false, error: error.message };
+        } catch (dbError) {
+            console.error('Error fetching webhook or logging:', dbError);
         }
     }
 }
 
-module.exports = WebhookService;
+module.exports = new WebhookService();
