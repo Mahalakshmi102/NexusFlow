@@ -66,18 +66,66 @@ export default function Dashboard() {
   const [alerts, setAlerts] = useState([
     { id: 1, time: '10:00:15', type: 'INFO', msg: 'System initialized & telemetry connected' },
   ]);
+
   const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);
-  const [configuredWebhooks, setConfiguredWebhooks] = useState([]);
   const [selectedMetric, setSelectedMetric] = useState('all');
   const [timeRange, setTimeRange] = useState('live');
+  const [isPaused, setIsPaused] = useState(false);
 
-  // Week 4 Day 4: Webhook Audit Logs State
-  const [webhookLogs, setWebhookLogs] = useState([]);
+  // Week 4 Day 5: LocalStorage Persistence for Webhooks
+  const [configuredWebhooks, setConfiguredWebhooks] = useState(() => {
+    const saved = localStorage.getItem('nexus_webhooks');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Week 4 Day 5: LocalStorage Persistence for Logs
+  const [webhookLogs, setWebhookLogs] = useState(() => {
+    const saved = localStorage.getItem('nexus_webhook_logs');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
   const [selectedHookForLogs, setSelectedHookForLogs] = useState(null);
 
-  // Week 3 Day 5: Stream Pause / Resume State
-  const [isPaused, setIsPaused] = useState(false);
+  // Sync to localStorage
+  useEffect(() => {
+    localStorage.setItem('nexus_webhooks', JSON.stringify(configuredWebhooks));
+  }, [configuredWebhooks]);
+
+  useEffect(() => {
+    localStorage.setItem('nexus_webhook_logs', JSON.stringify(webhookLogs));
+  }, [webhookLogs]);
+
+  // Automated Dispatch Helper
+  const triggerAutomatedWebhooks = (alertMessage, currentTelemetry) => {
+    const activeHooks = configuredWebhooks.filter((h) => h.status === 'active');
+    if (activeHooks.length === 0) return;
+
+    activeHooks.forEach((hook) => {
+      const latency = Math.floor(Math.random() * 100) + 40;
+      const isSuccess = Math.random() > 0.1;
+
+      const newLog = {
+        id: Date.now() + Math.random(),
+        webhookId: hook.id,
+        webhookName: hook.name,
+        endpoint: hook.url,
+        method: hook.method,
+        time: new Date().toLocaleTimeString(),
+        status: isSuccess ? 200 : 500,
+        statusText: isSuccess ? 'OK' : 'Gateway Error',
+        latency,
+        payload: {
+          event: 'AUTOMATED_ALERT_DISPATCH',
+          reason: alertMessage,
+          timestamp: new Date().toISOString(),
+          data: currentTelemetry,
+        },
+      };
+
+      setWebhookLogs((prev) => [newLog, ...prev.slice(0, 49)]);
+    });
+  };
 
   useEffect(() => {
     if (isPaused) return;
@@ -87,11 +135,13 @@ export default function Dashboard() {
       const newTemp = Math.floor(Math.random() * (95 - 68 + 1)) + 68;
       const newHum = Math.floor(Math.random() * (70 - 45 + 1)) + 45;
 
-      setTelemetry((prev) => ({
-        ...prev,
+      const updatedTelemetry = {
         temperature: newTemp,
         humidity: newHum,
-      }));
+        pressure: 1013,
+      };
+
+      setTelemetry(updatedTelemetry);
 
       setChartData((prev) => [
         ...prev.slice(-14),
@@ -99,30 +149,24 @@ export default function Dashboard() {
       ]);
 
       if (newTemp > 85) {
+        const msg = `High Temperature Alert! (${newTemp}°C > 85°C)`;
         setAlerts((prev) => [
-          {
-            id: Date.now(),
-            time: now,
-            type: 'CRITICAL',
-            msg: `High Temperature Alert! (${newTemp}°C > 85°C)`,
-          },
+          { id: Date.now(), time: now, type: 'CRITICAL', msg },
           ...prev.slice(0, 5),
         ]);
+        triggerAutomatedWebhooks(msg, updatedTelemetry);
       } else if (newHum > 65) {
+        const msg = `High Humidity detected (${newHum}%)`;
         setAlerts((prev) => [
-          {
-            id: Date.now(),
-            time: now,
-            type: 'WARNING',
-            msg: `High Humidity detected (${newHum}%)`,
-          },
+          { id: Date.now(), time: now, type: 'WARNING', msg },
           ...prev.slice(0, 5),
         ]);
+        triggerAutomatedWebhooks(msg, updatedTelemetry);
       }
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, configuredWebhooks]);
 
   const stats = useMemo(() => {
     if (!chartData.length) return { maxTemp: 0, minTemp: 0, avgTemp: 0 };
@@ -160,17 +204,16 @@ export default function Dashboard() {
     setConfiguredWebhooks((prev) => prev.filter((hook) => hook.id !== id));
   };
 
-  // Week 4 Day 3 & 4: Dispatch Simulation with Audit Trail Logging
   const handleTestWebhook = (webhook) => {
     const payload = {
-      event: 'TELEMETRY_ALERT',
+      event: 'MANUAL_TEST_DISPATCH',
       timestamp: new Date().toISOString(),
       source: 'NexusFlow IoT Gateway',
       data: telemetry,
     };
 
     const latency = Math.floor(Math.random() * 120) + 45;
-    const isSuccess = Math.random() > 0.15; // 85% success rate simulation
+    const isSuccess = Math.random() > 0.15;
 
     const newLog = {
       id: Date.now(),
@@ -484,7 +527,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Week 4 Day 2, 3 & 4: Webhook Management Table */}
+      {/* Week 4: Webhook Management Table */}
       <WebhookListTable
         webhooks={configuredWebhooks}
         onToggleStatus={handleToggleWebhook}
@@ -493,14 +536,14 @@ export default function Dashboard() {
         onOpenLogs={handleOpenLogsModal}
       />
 
-      {/* Week 4 Day 1: Webhook Configuration Modal */}
+      {/* Week 4: Webhook Configuration Modal */}
       <WebhookConfigModal
         isOpen={isWebhookModalOpen}
         onClose={() => setIsWebhookModalOpen(false)}
         onSave={handleSaveWebhook}
       />
 
-      {/* Week 4 Day 4: Webhook Delivery Logs Modal */}
+      {/* Week 4: Webhook Delivery Logs Modal */}
       <WebhookLogsModal
         isOpen={isLogsModalOpen}
         onClose={() => setIsLogsModalOpen(false)}
