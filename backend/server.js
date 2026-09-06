@@ -80,6 +80,11 @@ async function main() {
   app.use('/api/graphs', graphRoutes);
   app.use('/api/webhooks', webhookRoutes);
 
+  app.post('/api/mock-webhook', (req, res) => {
+    console.log('\n[MOCK WEBHOOK RECEIVED]', req.body);
+    res.status(200).json({ success: true, message: 'Mock webhook payload received successfully' });
+  });
+
   // Serve static frontend in production
   if (process.env.NODE_ENV === 'production') {
     const staticPath = path.join(__dirname, 'dist');

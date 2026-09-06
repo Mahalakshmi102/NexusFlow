@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ReactFlow, { 
   MiniMap, 
   Controls, 
@@ -13,6 +13,12 @@ import Sidebar from '../components/Sidebar';
 import DataSourceNode from '../components/nodes/DataSourceNode';
 import MathOperationNode from '../components/nodes/MathOperationNode';
 import ActionTriggerNode from '../components/nodes/ActionTriggerNode';
+import GlowingEdge from '../components/edges/GlowingEdge';
+import { socket } from '../socket';
+
+const edgeTypes = {
+  glowing: GlowingEdge
+};
 
 const nodeTypes = {
   sensor: DataSourceNode,
@@ -27,17 +33,56 @@ const initialNodes = [
   { id: '1', type: 'sensor', data: { label: 'Turbine Sensor' }, position: { x: 50, y: 150 } },
   { id: '2', type: 'condition', data: { label: 'Temp > 80°C' }, position: { x: 300, y: 150 } },
 ];
-const initialEdges = [{ id: 'e1-2', source: '1', target: '2', animated: true }];
+const initialEdges = [{ id: 'e1-2', source: '1', target: '2', type: 'glowing', animated: true }];
 
 function CanvasContent() {
   const reactFlowWrapper = useRef(null);
-  const [nodes, setNodes] = useState(initialNodes);
-  const [edges, setEdges] = useState(initialEdges);
+  const [nodes, setNodes] = useState(() => {
+    const saved = localStorage.getItem('nexusflow_nodes');
+    if (saved) return JSON.parse(saved);
+    return initialNodes;
+  });
+  const [edges, setEdges] = useState(() => {
+    const saved = localStorage.getItem('nexusflow_edges');
+    if (saved) return JSON.parse(saved);
+    return initialEdges;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('nexusflow_nodes', JSON.stringify(nodes));
+    localStorage.setItem('nexusflow_edges', JSON.stringify(edges));
+  }, [nodes, edges]);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
   const onNodesChange = useCallback((changes) => setNodes((nds) => applyNodeChanges(changes, nds)), []);
   const onEdgesChange = useCallback((changes) => setEdges((eds) => applyEdgeChanges(changes, eds)), []);
-  const onConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), []);
+  const onConnect = useCallback((params) => setEdges((eds) => addEdge({ ...params, type: 'glowing' }, eds)), []);
+
+  useEffect(() => {
+    function onEdgeActive(activeEvent) {
+      const { edgeId, source, target } = activeEvent;
+      
+      setEdges((eds) => eds.map(e => {
+        if (e.id === edgeId || (e.source === source && e.target === target)) {
+          return {
+            ...e,
+            data: {
+              ...e.data,
+              isActive: true,
+              activationTime: Date.now()
+            }
+          };
+        }
+        return e;
+      }));
+    }
+
+    socket.on('edge:active', onEdgeActive);
+
+    return () => {
+      socket.off('edge:active', onEdgeActive);
+    };
+  }, []);
 
   const isValidConnection = useCallback((connection) => {
     // Prevent self-connection and inherently React Flow prevents output-to-output based on Handle types
@@ -59,9 +104,9 @@ function CanvasContent() {
       if (!rawData) return;
 
       const { nodeType, label } = JSON.parse(rawData);
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
+      const position = reactFlowInstance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
       });
 
       const newNode = {
@@ -138,6 +183,7 @@ function CanvasContent() {
             nodes={nodes}
             edges={edges}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}

@@ -1,4 +1,5 @@
-const { map, filter, scan } = require('rxjs/operators');
+const { map, filter, scan, tap } = require('rxjs/operators');
+const { getIO } = require('../sockets');
 
 class GraphCompiler {
     constructor(telemetryHub, alertService, webhookService) {
@@ -23,7 +24,7 @@ class GraphCompiler {
         const subscriptions = [];
 
         const sources = (graph.nodes || []).filter(
-            (n) => n.type === 'deviceSource'
+            (n) => n.type === 'deviceSource' || n.type === 'sensor'
         );
 
         if (sources.length === 0) {
@@ -134,16 +135,24 @@ class GraphCompiler {
             );
 
             for (const child of children) {
+                const edgeTap$ = output$.pipe(
+                    tap(() => {
+                        const io = getIO();
+                        if (io) {
+                            io.emit('edge:active', { edgeId: child.id, source: child.source, target: child.target });
+                        }
+                    })
+                );
                 visit(
                     child.target,
-                    output$,
+                    edgeTap$,
                     sourceNode
                 );
             }
         };
 
         for (const source of sources) {
-            const deviceId = source.data?.deviceId;
+            const deviceId = source.data?.deviceId || 'sensor-1';
             const field =
                 source.data?.field || 'temperature';
 
@@ -166,9 +175,17 @@ class GraphCompiler {
             );
 
             for (const child of children) {
+                const edgeTap$ = source$.pipe(
+                    tap(() => {
+                        const io = getIO();
+                        if (io) {
+                            io.emit('edge:active', { edgeId: child.id, source: child.source, target: child.target });
+                        }
+                    })
+                );
                 visit(
                     child.target,
-                    source$,
+                    edgeTap$,
                     source
                 );
             }
