@@ -9,6 +9,8 @@ export default function Navbar() {
   const [isConnected, setIsConnected] = useState(socket.connected);
 
   useEffect(() => {
+    setIsConnected(socket.connected);
+
     function onConnect() {
       setIsConnected(true);
     }

@@ -35,7 +35,7 @@ class TelemetryService {
             while (this.pending.length > 0) {
                 const batch = this.pending.splice(0, this.batchSize);
 
-                await this.db.collection('telemetry').insertMany(
+                await this.db.connection.db.collection('telemetry').insertMany(
                     batch,
                     {
                         ordered: false

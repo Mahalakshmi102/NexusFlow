@@ -1,9 +1,11 @@
-const { map, filter, scan } = require('rxjs/operators');
+const { map, filter, scan, tap } = require('rxjs/operators');
+const { getIO } = require('../sockets');
 
 class GraphCompiler {
-    constructor(telemetryHub, alertService) {
+    constructor(telemetryHub, alertService, webhookService) {
         this.telemetryHub = telemetryHub;
         this.alertService = alertService;
+        this.webhookService = webhookService;
         this.activeSubscriptions = new Map();
     }
 
@@ -22,7 +24,7 @@ class GraphCompiler {
         const subscriptions = [];
 
         const sources = (graph.nodes || []).filter(
-            (n) => n.type === 'deviceSource'
+            (n) => n.type === 'deviceSource' || n.type === 'sensor'
         );
 
         if (sources.length === 0) {
@@ -89,6 +91,41 @@ class GraphCompiler {
                     return;
                 }
 
+                case 'action': {
+                    const subscription = output$.subscribe({
+                        next: (item) => {
+                            if (node.data?.actionType === 'webhook' && node.data?.selectedWebhookId && this.webhookService) {
+                                this.webhookService.executeWebhook(
+                                    node.data.selectedWebhookId,
+                                    {
+                                        deviceId: sourceNode.data.deviceId,
+                                        metric: sourceNode.data.field || 'temperature',
+                                        value: item.value,
+                                        timestamp: new Date().toISOString()
+                                    }
+                                );
+                            } else if (node.data?.actionType === 'alert') {
+                                this.alertService.sendAlert({
+                                    graphId,
+                                    graphName: graph.name || 'Untitled graph',
+                                    nodeId: node.id,
+                                    nodeName: node.data?.name || node.id,
+                                    deviceId: sourceNode.data.deviceId,
+                                    metric: sourceNode.data.field || 'temperature',
+                                    value: item.value,
+                                    message: node.data?.message || 'Action Alert triggered',
+                                    timestamp: new Date()
+                                });
+                            }
+                        },
+                        error: (err) => {
+                            console.error(`Graph ${graphId} action stream error:`, err.message);
+                        }
+                    });
+                    subscriptions.push(subscription);
+                    return;
+                }
+
                 default:
                     break;
             }
@@ -98,16 +135,24 @@ class GraphCompiler {
             );
 
             for (const child of children) {
+                const edgeTap$ = output$.pipe(
+                    tap(() => {
+                        const io = getIO();
+                        if (io) {
+                            io.emit('edge:active', { edgeId: child.id, source: child.source, target: child.target });
+                        }
+                    })
+                );
                 visit(
                     child.target,
-                    output$,
+                    edgeTap$,
                     sourceNode
                 );
             }
         };
 
         for (const source of sources) {
-            const deviceId = source.data?.deviceId;
+            const deviceId = source.data?.deviceId || 'sensor-1';
             const field =
                 source.data?.field || 'temperature';
 
@@ -130,9 +175,17 @@ class GraphCompiler {
             );
 
             for (const child of children) {
+                const edgeTap$ = source$.pipe(
+                    tap(() => {
+                        const io = getIO();
+                        if (io) {
+                            io.emit('edge:active', { edgeId: child.id, source: child.source, target: child.target });
+                        }
+                    })
+                );
                 visit(
                     child.target,
-                    source$,
+                    edgeTap$,
                     source
                 );
             }
