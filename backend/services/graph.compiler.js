@@ -60,7 +60,7 @@ class GraphCompiler {
                 case 'alert': {
                     const subscription = output$.subscribe({
                         next: (item) => {
-                            this.alertService.sendAlert({
+                            this.alertService.createAlert({
                                 graphId,
                                 graphName: graph.name || 'Untitled graph',
                                 nodeId: node.id,
@@ -105,7 +105,7 @@ class GraphCompiler {
                                     }
                                 );
                             } else if (node.data?.actionType === 'alert') {
-                                this.alertService.sendAlert({
+                                this.alertService.createAlert({
                                     graphId,
                                     graphName: graph.name || 'Untitled graph',
                                     nodeId: node.id,

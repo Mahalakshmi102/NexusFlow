@@ -1,12 +1,12 @@
 const http = require('http');
 
-const API_URL = 'http://localhost:5000/api/telemetry';
+const API_URL = 'http://127.0.0.1:5000/api/telemetry';
 
 function generateData() {
   return {
     deviceId: 'sensor-1',
     sensorType: 'environment',
-    temperature: Math.floor(Math.random() * (95 - 68 + 1)) + 68,
+    temperature: Math.floor(Math.random() * (110 - 80 + 1)) + 80, // 80 to 110 degrees
     humidity: Math.floor(Math.random() * (70 - 45 + 1)) + 45,
     pressure: 1013,
     timestamp: new Date().toISOString()

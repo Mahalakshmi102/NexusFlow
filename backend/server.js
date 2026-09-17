@@ -80,6 +80,24 @@ async function main() {
   app.use('/api/graphs', graphRoutes);
   app.use('/api/webhooks', webhookRoutes);
 
+  app.get('/api/alerts', (req, res) => {
+    res.json(app.locals.alertService.getAlerts());
+  });
+
+  app.post('/api/alerts/mock', (req, res) => {
+    const fakeAlert = {
+      ruleId: 'mock-rule-' + Math.floor(Math.random() * 1000),
+      message: 'Mock Alert: High temperature detected! (> 90)',
+      nodeId: 'node-' + Math.floor(Math.random() * 100),
+      nodeName: 'Temperature Sensor ' + Math.floor(Math.random() * 10),
+      metric: 'temperature',
+      value: Math.floor(Math.random() * 30) + 80,
+      timestamp: new Date().toISOString()
+    };
+    const created = app.locals.alertService.createAlert(fakeAlert);
+    res.json({ success: true, alert: created });
+  });
+
   app.post('/api/mock-webhook', (req, res) => {
     console.log('\n[MOCK WEBHOOK RECEIVED]', req.body);
     res.status(200).json({ success: true, message: 'Mock webhook payload received successfully' });
